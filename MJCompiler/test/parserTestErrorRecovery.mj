@@ -1,0 +1,130 @@
+program parserTestErrorRecovery
+	int x--, y, z; // #1
+	char c1, c2*; // #2
+	int a, b%, $, return, c, d-, e; // #3, #4
+    int +; // #5
+	boolean flag;
+	int array[], !, result; // #6
+	int setO[], setE[], setU[];
+	int fact1, fact2;
+	const int min = 50;
+	const int & = 100; // #7
+	const int max = 100;
+	const max = 100; // #8
+{
+	int sum(int a, int) // #9
+	{
+		return a + b;
+	}
+	
+	int mul(int a, b) // #10
+	{
+		return a * b;
+	}
+	
+	int square(int a)
+	{
+		return a * a;
+	}
+	
+	int dec(int a)
+	{
+		a--;
+		return a;
+	}
+	
+	bool isOutOfRange(int a) {
+		// if (a < min || a > max) return true;
+		// else return false;
+		if (a >= min && ) return false; // #11
+		else return true;
+	}
+	
+	int generateElement(int 6, bool odd) // #12
+		int adjust;
+	{
+		if (odd == true) adjust = 1;
+		else adjust = 0;
+		i++;
+		return i * 2 - adjust;
+	}
+
+	void main()
+		int i;
+		int swap;
+	{
+		x = 5;
+		y = 10;
+		z = x ++ y * 2; // #13
+		print(z); // 25
+		print(eol);
+		z = (x + -y) * 2;
+		print(z); // 30
+		print(eol);
+		
+		c1 = 'A';
+		c2 = 'B';
+		flag = true;
+		if (flag == true) print(c1);
+		else print(c2); // B
+		print(eol);
+		
+		array = new int[5];	
+		i = ; // #14
+		do {
+			array[i] = i;
+		} while (i < 5, i++);
+		result = square map array;
+		print(result); // 55
+		print(eol);
+		
+		array = new int[10];
+		i = 0;
+		do {
+			read(array[i]);
+			if (array[i] == *) continue; // #15
+			array[i] = 100 / array[i];
+		} while (i < 10, i++);
+		result = sum map array;
+		print(result); // sum of division results
+		print(eol);
+		
+		i = 0;
+		do {
+			setO[i] = generateElement(i, true);
+			setE[i] = generateElement(i, false);
+		} while (i < 10, i++);
+		setU = setO union setE;
+		print(setU); // [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+		print(eol);
+		
+		read(fact1);
+		read(fact2);
+		i = 0;
+		do {
+			setO[i] = mul(i, fact1);
+			setE[i] = mul(i, fact2);
+		} while (i < 10, i++);
+		setU = setO union setE;
+		print(setU); // set of multiplication results using previously read factors
+		print(eol);
+		
+		i = 0;
+		do {
+			read(x);
+			if (isOutOfRange(x)) continue;
+			read(y);
+			if (isOutOfRange(y)) continue;
+			if (x < y) {
+				swap = x;
+				x = y;
+				y = swap;
+			}
+			array[i] = sum(x, -y);
+			i++;
+		} while (i < 10);
+		result = dec map array;
+		print(result); // sum of decremented values within a range that were previously read
+		print(eol);
+	}
+}

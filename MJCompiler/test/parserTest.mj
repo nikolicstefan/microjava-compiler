@@ -1,0 +1,142 @@
+program parserTest
+	int x, y, z;
+	char c1, c2;
+	boolean flag;
+	int array[];
+	int result;
+	int arrayO[], arrayE[];
+	set setO, setE, setU;
+	int fact1, fact2;
+	const int min = 50;
+	const int max = 100;
+{
+	int sum(int a, int b)
+	{
+		return a + b;
+	}
+	
+	int mul(int a, int b)
+	{
+		return a * b;
+	}
+	
+	int square(int a)
+	{
+		return a * a;
+	}
+	
+	int dec(int a)
+	{
+		a--;
+		return a;
+	}
+	
+	bool isOutOfRange(int a) {
+		// if (a < min || a > max) return true;
+		// else return false;
+		if (a >= min && a <= max) return false;
+		else return true;
+	}
+	
+	int generateElement(int i, bool odd)
+		int adjust;
+	{
+		if (odd == true) adjust = 1;
+		else adjust = 0;
+		i++;
+		return i * 2 - adjust;
+	}
+
+	void main()
+		int i;
+		int swap;
+	{
+		x = 5;
+		y = 10;
+		z = x + y * 2;
+		print(z); // 25
+		print(eol);
+		z = (x + y) * 2;
+		print(z); // 30
+		print(eol);
+		
+		c1 = 'A';
+		c2 = 'B';
+		flag = true;
+		if (flag == true) print(c1);
+		else print(c2); // B
+		print(eol);
+		
+		array = new int[5];	
+		i = 0;	
+		do {
+			array[i] = i;
+		} while (i < 5, i++);
+		result = square map array;
+		print(result); // 55
+		print(eol);
+		
+		array = new int[10];
+		i = 0;
+		do {
+			read(array[i]);
+			if (array[i] == 0) continue;
+			array[i] = 100 / array[i];
+		} while (i < 10, i++);
+		result = sum map array;
+		print(result); // sum of division results
+		print(eol);
+		
+		i = 0;
+		do {
+			arrayO[i] = generateElement(i, true);
+			arrayE[i] = generateElement(i, false);
+		} while (i < 10, i++);
+		addAll(setO, arrayO);
+		addAll(setE, arrayE);
+		setU = setO union setE;
+		print(setU); // [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+		print(eol);
+		
+		read(fact1);
+		read(fact2);
+		i = 0;
+		do {
+			arrayO[i] = mul(i, fact1);
+			arrayE[i] = mul(i, fact2);
+		} while (i < 10, i++);
+		addAll(setO, arrayO);
+		addAll(setE, arrayE);
+		setU = setO union setE;
+		print(setU); // set of results from multiplication using previously read factors
+		print(eol);
+		
+		i = 0;
+		do {
+			read(x);
+			if (isOutOfRange(x)) continue;
+			read(y);
+			if (isOutOfRange(y)) continue;
+			if (x < y) {
+				swap = x;
+				x = y;
+				y = swap;
+			}
+			array[i] = sum(x, -y);
+			i++;
+		} while (i < 10);
+		result = dec map array;
+		print(result); // sum of decremented differences of previously read values within a range
+		print(eol);
+		
+		i = 0;
+		result = 0;
+		do {
+			if (i == 5) break;
+			result = result + i;
+			i++;
+		} while ();
+		print(result); // 10
+		print(eol);
+	}
+}

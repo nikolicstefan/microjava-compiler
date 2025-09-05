@@ -1,0 +1,372 @@
+package rs.ac.bg.etf.pp1;
+
+import java_cup.runtime.*;
+import org.apache.log4j.*;
+import rs.ac.bg.etf.pp1.ast.*;
+
+parser code {:
+	private boolean errorDetected;
+	private Logger log = Logger.getLogger(getClass());
+	
+	public void report_error(String message, Object info) {
+		errorDetected = true;
+		StringBuilder msg = new StringBuilder(message);
+		if (info instanceof Symbol) {
+			msg.append (" at line ").append(((Symbol)info).left);
+		}
+		log.error(msg.toString());
+	}
+	
+	public void report_fatal_error(String message, Object info) throws java.lang.Exception {
+		errorDetected = true;
+		StringBuilder msg = new StringBuilder(message);
+		if (info instanceof Symbol) {
+			msg.append (" at line ").append(((Symbol)info).left);
+		}
+		msg.append(", cannot proceed with parsing");
+		done_parsing();
+		log.error(msg.toString());
+	}
+	
+	public void syntax_error(Symbol cur_token) {
+		report_error("Syntax error", cur_token);
+	}
+	
+	public void unrecovered_syntax_error(Symbol cur_token) throws java.lang.Exception {
+		report_fatal_error("Fatal error", cur_token);
+	}
+	
+	public boolean isErrorDetected() {
+		return errorDetected;
+	}
+:}
+
+init with {:
+	errorDetected = false;
+:}
+
+scan with {:
+	Symbol s = this.getScanner().next_token();
+	if (s != null && s.value != null) {
+		log.info(s.toString() + " " + s.value.toString());
+	}
+	return s;
+:}
+
+terminal PROGRAM, LBRACE, RBRACE, CONST, ASSIGN, SEMI;
+terminal COMMA, LBRACKET, RBRACKET, LPAREN, RPAREN, VOID;
+terminal IF, BREAK, CONTINUE, RETURN, READ, PRINT, WHILE;
+terminal INC, DEC, MAP, MINUS, NEW, MUL, DIV, MOD, PLUS;
+terminal UNION, AND, OR, ELSE, DO;
+
+terminal String IDENT, BOOL, EQ, NE, GT, GE, LT, LE;
+terminal Integer NUMBER;
+terminal Character CHAR;
+
+nonterminal Program, ProgramName, DeclList, Decl, ConstDecl, ConstInit;
+nonterminal Type, Literal, ConstInitList, VarDecl, Var, ArrDeclBrackets;
+nonterminal VarList, MethodDeclList, MethodDecl, MethodSignature;
+nonterminal MethodRetTypeName, RetType, FormPars, FormPar, FormParList;
+nonterminal VarDeclList, StatementList, Statement, DesignatorStatement;
+nonterminal DesignatorAssign, DesignatorName, Assignop, ActPars;
+nonterminal ActParList, ActPar, Mulop, Addop, Setop, ElseBlock;
+nonterminal RetVal, PrintRepCnt, LoopStart, LoopCond, PostIterStmt;
+
+nonterminal java.lang.Integer AccessorList, Accessor;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, TermList, Term;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct FactorList, SignedFactor, Factor;
+
+nonterminal java.lang.String Relop;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Condition, CondTermList, CondTerm;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct CondFactList, CondFact;
+
+precedence left ELSE;
+
+Program ::= (Program) PROGRAM ProgramName DeclList LBRACE MethodDeclList RBRACE;
+
+ProgramName ::= (ProgramName) IDENT:progName;
+
+DeclList ::= (DeclListExists) Decl DeclList
+			 |
+			 (DeclListEpsilon) /* epsilon */
+			 ;
+
+Decl ::= (DeclConst) ConstDecl
+		 |
+		 (DeclVar) VarDecl
+		 |
+		 (DeclError) error:e
+		 {: String errorDescription = "invalid global declaration";
+		 String msg = "Syntax error at line " + eleft + ": " + errorDescription + ". Syntax error recovery";
+		 parser.report_error(msg, null); :}
+		 ;
+
+ConstDecl ::= (ConstDecl) CONST Type ConstInit ConstInitList SEMI;
+
+ConstInit ::= (ConstInitValid) IDENT:constName ASSIGN Literal
+			  |
+			  (ConstInitError) error:e
+			  {: String errorDescription = "invalid global constant declaration";
+			  String msg = "Syntax error at line " + eleft + ": " + errorDescription + ". Syntax error recovery";
+			  parser.report_error(msg, null); :}
+			  ;
+
+Type ::= (Type) IDENT:typeName;
+
+Literal ::= (LiteralNumberPos) NUMBER:numberLiteral
+			|
+			(LiteralNumberNeg) MINUS NUMBER:numberLiteral
+			|
+			(LiteralChar) CHAR:charLiteral
+			|
+			(LiteralBool) BOOL:boolLiteral
+			;
+
+ConstInitList ::= (ConstInitListExists) COMMA ConstInit ConstInitList
+				  |
+				  (ConstInitListEpsilon) /* epsilon */
+				  ;
+
+VarDecl ::= (VarDecl) Type Var VarList SEMI;
+			
+Var ::= (VarValid) IDENT:varName ArrDeclBrackets
+		|
+		(VarError) error:e
+		{: String errorDescription = "invalid global variable declaration";
+		String msg = "Syntax error at line " + eleft + ": " + errorDescription + ". Syntax error recovery";
+		parser.report_error(msg, null); :}
+		;
+
+ArrDeclBrackets ::= (ArrDeclBracketsExist) LBRACKET RBRACKET
+					|
+					(ArrDeclBracketsEpsilon) /* epsilon */
+					;
+
+VarList ::= (VarListExists) COMMA Var VarList
+			|
+			(VarListEpsilon) /* epsilon */
+			;
+
+MethodDeclList ::= (MethodDeclListExists) MethodDecl MethodDeclList
+				   |
+				   (MethodDeclListEpsilon) /* epsilon */
+				   ;
+
+MethodDecl ::= (MethodDecl) MethodSignature VarDeclList LBRACE StatementList RBRACE;
+
+MethodSignature ::= (MethodSignature) MethodRetTypeName LPAREN FormPars RPAREN;
+
+MethodRetTypeName ::= (MethodRetTypeName) RetType IDENT:methodName;
+
+RetType ::= (RetTypeNonVoid) Type
+			|
+			(RetTypeVoid) VOID
+			;
+
+FormPars ::= (FormParsExist) FormPar FormParList
+			 |
+			 (FormParsEpsilon) /* epsilon */
+			 ;
+
+FormPar ::= (FormParValid) Type IDENT:formParName ArrDeclBrackets
+			|
+			(FormParError) error:e
+			{: String errorDescription = "invalid formal parameter declaration";
+			String msg = "Syntax error at line " + eleft + ": " + errorDescription + ". Syntax error recovery";
+			parser.report_error(msg, null); :}
+			;
+
+FormParList ::= (FormParListExists) COMMA FormPar FormParList
+				|
+				(FormParListEpsilon) /* epsilon */
+				;
+
+VarDeclList ::= (VarDeclListExists) VarDecl VarDeclList
+				|
+				(VarDeclListEpsilon) /* epsilon */
+				;
+
+StatementList ::= (StatementListExists) Statement StatementList
+				  |
+				  (StatementListEpsilon) /* epsilon */
+				  ;
+
+Statement ::= (StatementDesignator) DesignatorStatement SEMI
+			  |
+			  (StatementIfElse) IF LPAREN Condition RPAREN Statement ElseBlock
+			  |
+			  (StatementBreak) BREAK SEMI
+			  |
+			  (StatementContinue) CONTINUE SEMI
+			  |
+			  (StatementReturn) RETURN RetVal SEMI
+			  |
+			  (StatementRead) READ LPAREN Designator RPAREN SEMI
+			  |
+			  (StatementPrint) PRINT LPAREN Expr PrintRepCnt RPAREN SEMI
+			  |
+			  (StatementDoWhile) LoopStart Statement WHILE LPAREN LoopCond RPAREN SEMI
+			  |
+			  (StatementBlock) LBRACE StatementList RBRACE
+			  ;
+
+DesignatorStatement ::= (DesignatorStatementAssign) DesignatorAssign
+						|
+						(DesignatorStatementFuncCall) Designator LPAREN ActPars RPAREN
+						|
+						(DesignatorStatementInc) Designator INC
+						|
+						(DesignatorStatementDec) Designator DEC
+						;
+
+DesignatorAssign ::= (DesignatorAssignSimple) Designator Assignop Expr
+					 |
+					 (DesignatorAssignSet) Designator Assignop Designator Setop Designator
+					 |
+					 (DesignatorAssignError) error:e
+					 {: String errorDescription = "invalid assignment statement construction";
+					 String msg = "Syntax error at line " + eleft + ": " + errorDescription + ". Syntax error recovery";
+					 parser.report_error(msg, null); :}
+					 ;
+
+Designator ::= (Designator) DesignatorName AccessorList;
+
+DesignatorName ::= (DesignatorName) IDENT:designatorName;
+
+AccessorList ::= (AccessorListExists) Accessor AccessorList
+				 |
+				 (AccessorListEpsilon) /* epsilon */
+				 ;
+
+Accessor ::= (AccessorArr) LBRACKET Expr RBRACKET;
+
+Assignop ::= (Assignop) ASSIGN;
+
+Expr ::= (ExprArithm) TermList
+		 |
+		 (ExprMap) Designator MAP Designator
+		 ;
+
+TermList ::= (TermListAddop) TermList Addop Term
+			 |
+			 (TermListSimple) Term
+			 ;
+
+Term ::= (Term) FactorList;
+
+FactorList ::= (FactorListMulop) FactorList Mulop SignedFactor
+			   |
+			   (FactorListSimple) SignedFactor
+			   ;
+
+SignedFactor ::= (SignedFactorPos) Factor
+				 |
+				 (SignedFactorNeg) MINUS Factor
+				 ;
+
+Factor ::= (FactorDesignator) Designator
+		   |
+		   (FactorFuncCall) Designator LPAREN ActPars RPAREN
+		   |
+		   (FactorNumber) NUMBER
+		   |
+		   (FactorChar) CHAR
+		   |
+		   (FactorBool) BOOL
+		   |
+		   (FactorArrAlloc) NEW Type LBRACKET Expr RBRACKET
+		   |
+		   (FactorGrouped) LPAREN Expr RPAREN
+		   ;
+
+ActPars ::= (ActParsExist) ActPar ActParList
+			|
+			(ActParsEpsilon) /* epsilon */
+			;
+
+ActParList ::= (ActParListComma) COMMA ActPar ActParList
+			   |
+			   (ActParListSimple) /* epsilon */
+			   ;
+
+ActPar ::= (ActPar) Expr;
+
+Mulop ::= (MulopMul) MUL
+		  |
+		  (MulopDiv) DIV
+		  |
+		  (MulopMod) MOD
+		  ;
+
+Addop ::= (AddopPlus) PLUS
+		  |
+		  (AddopMinus) MINUS
+		  ;
+
+Setop ::= (Setop) UNION;
+
+Condition ::= (ConditionValid) CondTermList
+			  |
+			  (ConditionError) error:e
+			  {: String errorDescription = "invalid if statement logical expression";
+			  String msg = "Syntax error at line " + eleft + ": " + errorDescription + ". Syntax error recovery";
+			  parser.report_error(msg, null); :}
+			  ;
+
+CondTermList ::= (CondTermListOr) CondTermList OR CondTerm
+				 |
+				 (CondTermListSimple) CondTerm
+				 ;
+
+CondTerm ::= (CondTerm) CondFactList;
+
+CondFactList ::= (CondFactListAnd) CondFactList AND CondFact
+				 |
+				 (CondFactListSimple) CondFact
+				 ;
+
+CondFact ::= (CondFactSimple) Expr
+			 |
+			 (CondFactRelop) Expr Relop Expr
+			 ;
+
+Relop ::= (RelopEq) EQ:eq
+		  |
+		  (RelopNe) NE:ne
+		  |
+		  (RelopGt) GT:gt
+		  |
+		  (RelopGe) GE:ge
+		  |
+		  (RelopLt) LT:lt
+		  |
+		  (RelopLe) LE:le
+		  ;
+
+ElseBlock ::= (ElseBlockExists) ELSE Statement
+			  |
+			  (ElseBlockEpsilon) /* epsilon */
+			  ;
+
+RetVal ::= (RetValExists) Expr
+		   |
+		   (RetValEpsilon) /* epsilon */
+		   ;
+
+PrintRepCnt ::= (PrintRepCntExists) COMMA NUMBER
+				|
+				(PrintRepCntEpsilon) /* epsilon */
+				;
+				
+LoopStart ::= (LoopStart) DO;
+
+LoopCond ::= (LoopCondExists) Condition PostIterStmt
+			 |
+			 (LoopCondEpsilon) /* epsilon */
+			 ;
+
+PostIterStmt ::= (PostIterStmtExists) COMMA DesignatorStatement
+				 |
+				 (PostIterStmtEpsilon) /* epsilon */
+				 ;

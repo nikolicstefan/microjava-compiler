@@ -1,0 +1,404 @@
+package rs.ac.bg.etf.pp1;
+
+import java_cup.runtime.*;
+import org.apache.log4j.*;
+import rs.ac.bg.etf.pp1.ast.*;
+
+parser code {:
+	private boolean errorDetected;
+	private Logger log = Logger.getLogger(getClass());
+	
+	public void report_error(String message, Object info) {
+		errorDetected = true;
+		StringBuilder msg = new StringBuilder(message);
+		if (info instanceof Symbol) {
+			msg.append (" at line ").append(((Symbol)info).left);
+		}
+		log.error(msg.toString());
+	}
+	
+	public void report_fatal_error(String message, Object info) throws java.lang.Exception {
+		errorDetected = true;
+		StringBuilder msg = new StringBuilder(message);
+		if (info instanceof Symbol) {
+			msg.append (" at line ").append(((Symbol)info).left);
+		}
+		msg.append(", cannot proceed with parsing");
+		done_parsing();
+		log.error(msg.toString());
+	}
+	
+	public void syntax_error(Symbol cur_token) {
+		report_error("Syntax error", cur_token);
+	}
+	
+	public void unrecovered_syntax_error(Symbol cur_token) throws java.lang.Exception {
+		report_fatal_error("Fatal error", cur_token);
+	}
+	
+	public boolean isErrorDetected() {
+		return errorDetected;
+	}
+:}
+
+init with {:
+	errorDetected = false;
+:}
+
+scan with {:
+	Symbol s = this.getScanner().next_token();
+	if (s != null && s.value != null) {
+		log.info(s.toString() + " " + s.value.toString());
+	}
+	return s;
+:}
+
+terminal PROGRAM, LBRACE, RBRACE, CONST, ASSIGN, SEMI;
+terminal COMMA, LBRACKET, RBRACKET, LPAREN, RPAREN, VOID;
+terminal IF, BREAK, CONTINUE, RETURN, READ, PRINT, WHILE;
+terminal INC, DEC, MAP, MINUS, NEW, MUL, DIV, MOD, PLUS;
+terminal UNION, AND, OR, ELSE, DO;
+
+terminal String IDENT, BOOL, EQ, NE, GT, GE, LT, LE;
+terminal Integer NUMBER;
+terminal Character CHAR;
+
+nonterminal Program Program;
+nonterminal ProgramName ProgramName;
+nonterminal DeclList DeclList;
+nonterminal Decl Decl;
+nonterminal ConstDecl ConstDecl;
+nonterminal ConstInit ConstInit;
+nonterminal Type Type;
+nonterminal Literal Literal;
+nonterminal ConstInitList ConstInitList;
+nonterminal VarDecl VarDecl;
+nonterminal Var Var;
+nonterminal ArrDeclBrackets ArrDeclBrackets;
+nonterminal VarList VarList;
+nonterminal MethodDeclList MethodDeclList;
+nonterminal MethodDecl MethodDecl;
+nonterminal MethodSignature MethodSignature;
+nonterminal MethodRetTypeName MethodRetTypeName;
+nonterminal RetType RetType;
+nonterminal FormPars FormPars;
+nonterminal FormPar FormPar;
+nonterminal FormParList FormParList;
+nonterminal VarDeclList VarDeclList;
+nonterminal StatementList StatementList;
+nonterminal Statement Statement;
+nonterminal DesignatorStatement DesignatorStatement;
+nonterminal DesignatorAssign DesignatorAssign;
+nonterminal DesignatorName DesignatorName;
+nonterminal Assignop Assignop;
+nonterminal ActPars ActPars;
+nonterminal ActParList ActParList;
+nonterminal ActPar ActPar;
+nonterminal Mulop Mulop;
+nonterminal Addop Addop;
+nonterminal Setop Setop;
+nonterminal ElseBlock ElseBlock;
+nonterminal RetVal RetVal;
+nonterminal PrintRepCnt PrintRepCnt;
+nonterminal LoopStart LoopStart;
+nonterminal LoopCond LoopCond;
+nonterminal PostIterStmt PostIterStmt;
+
+nonterminal java.lang.Integer AccessorList, Accessor;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, TermList, Term;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct FactorList, SignedFactor, Factor;
+
+nonterminal java.lang.String Relop;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Condition, CondTermList, CondTerm;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct CondFactList, CondFact;
+
+precedence left ELSE;
+
+Program ::= (Program) PROGRAM ProgramName:P1 DeclList:D2 LBRACE MethodDeclList:M3 RBRACE {: RESULT=new Program(P1, D2, M3); RESULT.setLine(P1left); :};
+
+ProgramName ::= (ProgramName) IDENT:progName {: RESULT=new ProgramName(progName); RESULT.setLine(progNameleft); :};
+
+DeclList ::= (DeclListExists) Decl:D1 DeclList:D2 {: RESULT=new DeclListExists(D1, D2); RESULT.setLine(D1left); :}
+			 |
+			 (DeclListEpsilon) {: RESULT=new DeclListEpsilon(); :} /* epsilon */
+			 ;
+
+Decl ::= (DeclConst) ConstDecl:C1 {: RESULT=new DeclConst(C1); RESULT.setLine(C1left); :}
+		 |
+		 (DeclVar) VarDecl:V1 {: RESULT=new DeclVar(V1); RESULT.setLine(V1left); :}
+		 |
+		 (DeclError) error:e
+		 {: String errorDescription = "invalid global declaration";
+		 String msg = "Syntax error at line " + eleft + ": " + errorDescription + ". Syntax error recovery";
+		 parser.report_error(msg, null); :} {: RESULT=new DeclError(); :}
+		 ;
+
+ConstDecl ::= (ConstDecl) CONST Type:T1 ConstInit:C2 ConstInitList:C3 SEMI {: RESULT=new ConstDecl(T1, C2, C3); RESULT.setLine(T1left); :};
+
+ConstInit ::= (ConstInitValid) IDENT:constName ASSIGN Literal:L1 {: RESULT=new ConstInitValid(constName, L1); RESULT.setLine(constNameleft); :}
+			  |
+			  (ConstInitError) error:e
+			  {: String errorDescription = "invalid global constant declaration";
+			  String msg = "Syntax error at line " + eleft + ": " + errorDescription + ". Syntax error recovery";
+			  parser.report_error(msg, null); :} {: RESULT=new ConstInitError(); :}
+			  ;
+
+Type ::= (Type) IDENT:typeName {: RESULT=new Type(typeName); RESULT.setLine(typeNameleft); :};
+
+Literal ::= (LiteralNumberPos) NUMBER:numberLiteral {: RESULT=new LiteralNumberPos(numberLiteral); RESULT.setLine(numberLiteralleft); :}
+			|
+			(LiteralNumberNeg) MINUS NUMBER:numberLiteral {: RESULT=new LiteralNumberNeg(numberLiteral); RESULT.setLine(numberLiteralleft); :}
+			|
+			(LiteralChar) CHAR:charLiteral {: RESULT=new LiteralChar(charLiteral); RESULT.setLine(charLiteralleft); :}
+			|
+			(LiteralBool) BOOL:boolLiteral {: RESULT=new LiteralBool(boolLiteral); RESULT.setLine(boolLiteralleft); :}
+			;
+
+ConstInitList ::= (ConstInitListExists) COMMA ConstInit:C1 ConstInitList:C2 {: RESULT=new ConstInitListExists(C1, C2); RESULT.setLine(C1left); :}
+				  |
+				  (ConstInitListEpsilon) {: RESULT=new ConstInitListEpsilon(); :} /* epsilon */
+				  ;
+
+VarDecl ::= (VarDecl) Type:T1 Var:V2 VarList:V3 SEMI {: RESULT=new VarDecl(T1, V2, V3); RESULT.setLine(T1left); :};
+			
+Var ::= (VarValid) IDENT:varName ArrDeclBrackets:A1 {: RESULT=new VarValid(varName, A1); RESULT.setLine(varNameleft); :}
+		|
+		(VarError) error:e
+		{: String errorDescription = "invalid global variable declaration";
+		String msg = "Syntax error at line " + eleft + ": " + errorDescription + ". Syntax error recovery";
+		parser.report_error(msg, null); :} {: RESULT=new VarError(); :}
+		;
+
+ArrDeclBrackets ::= (ArrDeclBracketsExist) LBRACKET RBRACKET {: RESULT=new ArrDeclBracketsExist(); :}
+					|
+					(ArrDeclBracketsEpsilon) {: RESULT=new ArrDeclBracketsEpsilon(); :} /* epsilon */
+					;
+
+VarList ::= (VarListExists) COMMA Var:V1 VarList:V2 {: RESULT=new VarListExists(V1, V2); RESULT.setLine(V1left); :}
+			|
+			(VarListEpsilon) {: RESULT=new VarListEpsilon(); :} /* epsilon */
+			;
+
+MethodDeclList ::= (MethodDeclListExists) MethodDecl:M1 MethodDeclList:M2 {: RESULT=new MethodDeclListExists(M1, M2); RESULT.setLine(M1left); :}
+				   |
+				   (MethodDeclListEpsilon) {: RESULT=new MethodDeclListEpsilon(); :} /* epsilon */
+				   ;
+
+MethodDecl ::= (MethodDecl) MethodSignature:M1 VarDeclList:V2 LBRACE StatementList:S3 RBRACE {: RESULT=new MethodDecl(M1, V2, S3); RESULT.setLine(M1left); :};
+
+MethodSignature ::= (MethodSignature) MethodRetTypeName:M1 LPAREN FormPars:F2 RPAREN {: RESULT=new MethodSignature(M1, F2); RESULT.setLine(M1left); :};
+
+MethodRetTypeName ::= (MethodRetTypeName) RetType:R1 IDENT:methodName {: RESULT=new MethodRetTypeName(R1, methodName); RESULT.setLine(R1left); :};
+
+RetType ::= (RetTypeNonVoid) Type:T1 {: RESULT=new RetTypeNonVoid(T1); RESULT.setLine(T1left); :}
+			|
+			(RetTypeVoid) VOID {: RESULT=new RetTypeVoid(); :}
+			;
+
+FormPars ::= (FormParsExist) FormPar:F1 FormParList:F2 {: RESULT=new FormParsExist(F1, F2); RESULT.setLine(F1left); :}
+			 |
+			 (FormParsEpsilon) {: RESULT=new FormParsEpsilon(); :} /* epsilon */
+			 ;
+
+FormPar ::= (FormParValid) Type:T1 IDENT:formParName ArrDeclBrackets:A2 {: RESULT=new FormParValid(T1, formParName, A2); RESULT.setLine(T1left); :}
+			|
+			(FormParError) error:e
+			{: String errorDescription = "invalid formal parameter declaration";
+			String msg = "Syntax error at line " + eleft + ": " + errorDescription + ". Syntax error recovery";
+			parser.report_error(msg, null); :} {: RESULT=new FormParError(); :}
+			;
+
+FormParList ::= (FormParListExists) COMMA FormPar:F1 FormParList:F2 {: RESULT=new FormParListExists(F1, F2); RESULT.setLine(F1left); :}
+				|
+				(FormParListEpsilon) {: RESULT=new FormParListEpsilon(); :} /* epsilon */
+				;
+
+VarDeclList ::= (VarDeclListExists) VarDecl:V1 VarDeclList:V2 {: RESULT=new VarDeclListExists(V1, V2); RESULT.setLine(V1left); :}
+				|
+				(VarDeclListEpsilon) {: RESULT=new VarDeclListEpsilon(); :} /* epsilon */
+				;
+
+StatementList ::= (StatementListExists) Statement:S1 StatementList:S2 {: RESULT=new StatementListExists(S1, S2); RESULT.setLine(S1left); :}
+				  |
+				  (StatementListEpsilon) {: RESULT=new StatementListEpsilon(); :} /* epsilon */
+				  ;
+
+Statement ::= (StatementDesignator) DesignatorStatement:D1 SEMI {: RESULT=new StatementDesignator(D1); RESULT.setLine(D1left); :}
+			  |
+			  (StatementIfElse) IF LPAREN Condition:C1 RPAREN Statement:S2 ElseBlock:E3 {: RESULT=new StatementIfElse(C1, S2, E3); RESULT.setLine(C1left); :}
+			  |
+			  (StatementBreak) BREAK SEMI {: RESULT=new StatementBreak(); :}
+			  |
+			  (StatementContinue) CONTINUE SEMI {: RESULT=new StatementContinue(); :}
+			  |
+			  (StatementReturn) RETURN RetVal:R1 SEMI {: RESULT=new StatementReturn(R1); RESULT.setLine(R1left); :}
+			  |
+			  (StatementRead) READ LPAREN Designator:D1 RPAREN SEMI {: RESULT=new StatementRead(D1); RESULT.setLine(D1left); :}
+			  |
+			  (StatementPrint) PRINT LPAREN Expr:E1 PrintRepCnt:P2 RPAREN SEMI {: RESULT=new StatementPrint(E1, P2); RESULT.setLine(E1left); :}
+			  |
+			  (StatementDoWhile) LoopStart:L1 Statement:S2 WHILE LPAREN LoopCond:L3 RPAREN SEMI {: RESULT=new StatementDoWhile(L1, S2, L3); RESULT.setLine(L1left); :}
+			  |
+			  (StatementBlock) LBRACE StatementList:S1 RBRACE {: RESULT=new StatementBlock(S1); RESULT.setLine(S1left); :}
+			  ;
+
+DesignatorStatement ::= (DesignatorStatementAssign) DesignatorAssign:D1 {: RESULT=new DesignatorStatementAssign(D1); RESULT.setLine(D1left); :}
+						|
+						(DesignatorStatementFuncCall) Designator:D1 LPAREN ActPars:A2 RPAREN {: RESULT=new DesignatorStatementFuncCall(D1, A2); RESULT.setLine(D1left); :}
+						|
+						(DesignatorStatementInc) Designator:D1 INC {: RESULT=new DesignatorStatementInc(D1); RESULT.setLine(D1left); :}
+						|
+						(DesignatorStatementDec) Designator:D1 DEC {: RESULT=new DesignatorStatementDec(D1); RESULT.setLine(D1left); :}
+						;
+
+DesignatorAssign ::= (DesignatorAssignSimple) Designator:D1 Assignop:A2 Expr:E3 {: RESULT=new DesignatorAssignSimple(D1, A2, E3); RESULT.setLine(D1left); :}
+					 |
+					 (DesignatorAssignSet) Designator:D1 Assignop:A2 Designator:D3 Setop:S4 Designator:D5 {: RESULT=new DesignatorAssignSet(D1, A2, D3, S4, D5); RESULT.setLine(D1left); :}
+					 |
+					 (DesignatorAssignError) error:e
+					 {: String errorDescription = "invalid assignment statement construction";
+					 String msg = "Syntax error at line " + eleft + ": " + errorDescription + ". Syntax error recovery";
+					 parser.report_error(msg, null); :} {: RESULT=new DesignatorAssignError(); :}
+					 ;
+
+Designator ::= (Designator) DesignatorName:D1 AccessorList:A2 {: RESULT=new Designator(D1, A2); RESULT.setLine(D1left); :};
+
+DesignatorName ::= (DesignatorName) IDENT:designatorName {: RESULT=new DesignatorName(designatorName); RESULT.setLine(designatorNameleft); :};
+
+AccessorList ::= (AccessorListExists) Accessor:A1 AccessorList:A2 {: RESULT=new AccessorListExists(A1, A2); RESULT.setLine(A1left); :}
+				 |
+				 (AccessorListEpsilon) {: RESULT=new AccessorListEpsilon(); :} /* epsilon */
+				 ;
+
+Accessor ::= (AccessorArr) LBRACKET Expr:E1 RBRACKET {: RESULT=new AccessorArr(E1); RESULT.setLine(E1left); :};
+
+Assignop ::= (Assignop) ASSIGN {: RESULT=new Assignop(); :};
+
+Expr ::= (ExprArithm) TermList:T1 {: RESULT=new ExprArithm(T1); RESULT.setLine(T1left); :}
+		 |
+		 (ExprMap) Designator:D1 MAP Designator:D2 {: RESULT=new ExprMap(D1, D2); RESULT.setLine(D1left); :}
+		 ;
+
+TermList ::= (TermListAddop) TermList:T1 Addop:A2 Term:T3 {: RESULT=new TermListAddop(T1, A2, T3); RESULT.setLine(T1left); :}
+			 |
+			 (TermListSimple) Term:T1 {: RESULT=new TermListSimple(T1); RESULT.setLine(T1left); :}
+			 ;
+
+Term ::= (Term) FactorList:F1 {: RESULT=new Term(F1); RESULT.setLine(F1left); :};
+
+FactorList ::= (FactorListMulop) FactorList:F1 Mulop:M2 SignedFactor:S3 {: RESULT=new FactorListMulop(F1, M2, S3); RESULT.setLine(F1left); :}
+			   |
+			   (FactorListSimple) SignedFactor:S1 {: RESULT=new FactorListSimple(S1); RESULT.setLine(S1left); :}
+			   ;
+
+SignedFactor ::= (SignedFactorPos) Factor:F1 {: RESULT=new SignedFactorPos(F1); RESULT.setLine(F1left); :}
+				 |
+				 (SignedFactorNeg) MINUS Factor:F1 {: RESULT=new SignedFactorNeg(F1); RESULT.setLine(F1left); :}
+				 ;
+
+Factor ::= (FactorDesignator) Designator:D1 {: RESULT=new FactorDesignator(D1); RESULT.setLine(D1left); :}
+		   |
+		   (FactorFuncCall) Designator:D1 LPAREN ActPars:A2 RPAREN {: RESULT=new FactorFuncCall(D1, A2); RESULT.setLine(D1left); :}
+		   |
+		   (FactorNumber) NUMBER:N1 {: RESULT=new FactorNumber(N1); RESULT.setLine(N1left); :}
+		   |
+		   (FactorChar) CHAR:C1 {: RESULT=new FactorChar(C1); RESULT.setLine(C1left); :}
+		   |
+		   (FactorBool) BOOL:B1 {: RESULT=new FactorBool(B1); RESULT.setLine(B1left); :}
+		   |
+		   (FactorArrAlloc) NEW Type:T1 LBRACKET Expr:E2 RBRACKET {: RESULT=new FactorArrAlloc(T1, E2); RESULT.setLine(T1left); :}
+		   |
+		   (FactorGrouped) LPAREN Expr:E1 RPAREN {: RESULT=new FactorGrouped(E1); RESULT.setLine(E1left); :}
+		   ;
+
+ActPars ::= (ActParsExist) ActPar:A1 ActParList:A2 {: RESULT=new ActParsExist(A1, A2); RESULT.setLine(A1left); :}
+			|
+			(ActParsEpsilon) {: RESULT=new ActParsEpsilon(); :} /* epsilon */
+			;
+
+ActParList ::= (ActParListComma) COMMA ActPar:A1 ActParList:A2 {: RESULT=new ActParListComma(A1, A2); RESULT.setLine(A1left); :}
+			   |
+			   (ActParListSimple) {: RESULT=new ActParListSimple(); :} /* epsilon */
+			   ;
+
+ActPar ::= (ActPar) Expr:E1 {: RESULT=new ActPar(E1); RESULT.setLine(E1left); :};
+
+Mulop ::= (MulopMul) MUL {: RESULT=new MulopMul(); :}
+		  |
+		  (MulopDiv) DIV {: RESULT=new MulopDiv(); :}
+		  |
+		  (MulopMod) MOD {: RESULT=new MulopMod(); :}
+		  ;
+
+Addop ::= (AddopPlus) PLUS {: RESULT=new AddopPlus(); :}
+		  |
+		  (AddopMinus) MINUS {: RESULT=new AddopMinus(); :}
+		  ;
+
+Setop ::= (Setop) UNION {: RESULT=new Setop(); :};
+
+Condition ::= (ConditionValid) CondTermList:C1 {: RESULT=new ConditionValid(C1); RESULT.setLine(C1left); :}
+			  |
+			  (ConditionError) error:e
+			  {: String errorDescription = "invalid if statement logical expression";
+			  String msg = "Syntax error at line " + eleft + ": " + errorDescription + ". Syntax error recovery";
+			  parser.report_error(msg, null); :} {: RESULT=new ConditionError(); :}
+			  ;
+
+CondTermList ::= (CondTermListOr) CondTermList:C1 OR CondTerm:C2 {: RESULT=new CondTermListOr(C1, C2); RESULT.setLine(C1left); :}
+				 |
+				 (CondTermListSimple) CondTerm:C1 {: RESULT=new CondTermListSimple(C1); RESULT.setLine(C1left); :}
+				 ;
+
+CondTerm ::= (CondTerm) CondFactList:C1 {: RESULT=new CondTerm(C1); RESULT.setLine(C1left); :};
+
+CondFactList ::= (CondFactListAnd) CondFactList:C1 AND CondFact:C2 {: RESULT=new CondFactListAnd(C1, C2); RESULT.setLine(C1left); :}
+				 |
+				 (CondFactListSimple) CondFact:C1 {: RESULT=new CondFactListSimple(C1); RESULT.setLine(C1left); :}
+				 ;
+
+CondFact ::= (CondFactSimple) Expr:E1 {: RESULT=new CondFactSimple(E1); RESULT.setLine(E1left); :}
+			 |
+			 (CondFactRelop) Expr:E1 Relop:R2 Expr:E3 {: RESULT=new CondFactRelop(E1, R2, E3); RESULT.setLine(E1left); :}
+			 ;
+
+Relop ::= (RelopEq) EQ:eq {: RESULT=new RelopEq(eq); RESULT.setLine(eqleft); :}
+		  |
+		  (RelopNe) NE:ne {: RESULT=new RelopNe(ne); RESULT.setLine(neleft); :}
+		  |
+		  (RelopGt) GT:gt {: RESULT=new RelopGt(gt); RESULT.setLine(gtleft); :}
+		  |
+		  (RelopGe) GE:ge {: RESULT=new RelopGe(ge); RESULT.setLine(geleft); :}
+		  |
+		  (RelopLt) LT:lt {: RESULT=new RelopLt(lt); RESULT.setLine(ltleft); :}
+		  |
+		  (RelopLe) LE:le {: RESULT=new RelopLe(le); RESULT.setLine(leleft); :}
+		  ;
+
+ElseBlock ::= (ElseBlockExists) ELSE Statement:S1 {: RESULT=new ElseBlockExists(S1); RESULT.setLine(S1left); :}
+			  |
+			  (ElseBlockEpsilon) {: RESULT=new ElseBlockEpsilon(); :} /* epsilon */
+			  ;
+
+RetVal ::= (RetValExists) Expr:E1 {: RESULT=new RetValExists(E1); RESULT.setLine(E1left); :}
+		   |
+		   (RetValEpsilon) {: RESULT=new RetValEpsilon(); :} /* epsilon */
+		   ;
+
+PrintRepCnt ::= (PrintRepCntExists) COMMA NUMBER:N1 {: RESULT=new PrintRepCntExists(N1); RESULT.setLine(N1left); :}
+				|
+				(PrintRepCntEpsilon) {: RESULT=new PrintRepCntEpsilon(); :} /* epsilon */
+				;
+				
+LoopStart ::= (LoopStart) DO {: RESULT=new LoopStart(); :};
+
+LoopCond ::= (LoopCondExists) Condition:C1 PostIterStmt:P2 {: RESULT=new LoopCondExists(C1, P2); RESULT.setLine(C1left); :}
+			 |
+			 (LoopCondEpsilon) {: RESULT=new LoopCondEpsilon(); :} /* epsilon */
+			 ;
+
+PostIterStmt ::= (PostIterStmtExists) COMMA DesignatorStatement:D1 {: RESULT=new PostIterStmtExists(D1); RESULT.setLine(D1left); :}
+				 |
+				 (PostIterStmtEpsilon) {: RESULT=new PostIterStmtEpsilon(); :} /* epsilon */
+				 ;
