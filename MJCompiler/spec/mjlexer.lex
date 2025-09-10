@@ -85,7 +85,7 @@ import org.apache.log4j.*;
 
 [0-9]+  						{ return new_symbol(sym.NUMBER, Integer.valueOf(yytext())); }
 "'"."'"							{ return new_symbol(sym.CHAR, Character.valueOf(yytext().charAt(1))); }
-("true"|"false")				{ return new_symbol(sym.BOOL, yytext()); }
+("true"|"false")				{ return new_symbol(sym.BOOL, Boolean.valueOf(yytext())); }
 ([a-z]|[A-Z])[a-z|A-Z|0-9|_]* 	{ return new_symbol(sym.IDENT, yytext()); }
 
 .	{ String message = "Lexical error at line " + (yyline + 1) + ", symbol '" + yytext() + "' is invalid";

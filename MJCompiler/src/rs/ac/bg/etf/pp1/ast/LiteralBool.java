@@ -1,23 +1,23 @@
 // generated with ast extension for cup
 // version 0.8
-// 5/8/2025 20:13:24
+// 8/8/2025 21:3:19
 
 
 package rs.ac.bg.etf.pp1.ast;
 
 public class LiteralBool extends Literal {
 
-    private String boolLiteral;
+    private Boolean boolLiteral;
 
-    public LiteralBool (String boolLiteral) {
+    public LiteralBool (Boolean boolLiteral) {
         this.boolLiteral=boolLiteral;
     }
 
-    public String getBoolLiteral() {
+    public Boolean getBoolLiteral() {
         return boolLiteral;
     }
 
-    public void setBoolLiteral(String boolLiteral) {
+    public void setBoolLiteral(Boolean boolLiteral) {
         this.boolLiteral=boolLiteral;
     }
 

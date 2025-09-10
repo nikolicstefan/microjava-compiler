@@ -59,9 +59,10 @@ terminal IF, BREAK, CONTINUE, RETURN, READ, PRINT, WHILE;
 terminal INC, DEC, MAP, MINUS, NEW, MUL, DIV, MOD, PLUS;
 terminal UNION, AND, OR, ELSE, DO;
 
-terminal String IDENT, BOOL, EQ, NE, GT, GE, LT, LE;
+terminal String IDENT, EQ, NE, GT, GE, LT, LE;
 terminal Integer NUMBER;
 terminal Character CHAR;
+terminal Boolean BOOL;
 
 nonterminal Program Program;
 nonterminal ProgramName ProgramName;
@@ -104,10 +105,10 @@ nonterminal LoopStart LoopStart;
 nonterminal LoopCond LoopCond;
 nonterminal PostIterStmt PostIterStmt;
 
-nonterminal java.lang.Integer AccessorList, Accessor;
 nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, TermList, Term;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct FactorList, SignedFactor, Factor;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct AccessorList, Accessor;
 
 nonterminal java.lang.String Relop;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Condition, CondTermList, CondTerm;

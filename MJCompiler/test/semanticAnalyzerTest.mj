@@ -1,0 +1,203 @@
+program semanticAnalyzerTest
+	int x, y, z;
+	char c1, c2;
+	bool flag;
+	int array[], arrayLength;
+	int result;
+	int arrayO[], arrayE[];
+	set setO, setE, setU;
+	int fact1, fact2;
+	const int min = 50;
+	const int max = 100;
+	const int cap = 10;
+	const char c = 'a';
+	const bool forever = true;
+	const bool never = false;
+{
+	int echo(int x)
+	{
+		return x;
+	}
+	
+	int sum(int a, int b)
+	{
+		return a + b;
+	}
+	
+	int mul(int a, int b)
+	{
+		return a * b;
+	}
+	
+	int square(int a)
+	{
+		return a * a;
+	}
+	
+	int sumOfSquares(int array[])
+		int sum, i;
+	{
+		sum = 0;
+		if (array != null) {
+			i = 0;
+			do {
+				sum = sum + square(array[i]);
+				i++;
+			} while (i < arrayLength);
+		}
+		return sum;
+	}
+	
+	int dec(int a)
+	{
+		a--;
+		return a;
+	}
+	
+	bool isOutOfRange(int a) {
+		// if (a < min || a > max) return true;
+		// else return false;
+		if (a >= min && a <= max) return false;
+		else return true;
+	}
+	
+	int generateElement(int i, bool odd)
+		int adjust;
+	{
+		if (odd == true) adjust = 1;
+		else adjust = 0;
+		i++;
+		return i * 2 - adjust;
+	}
+	
+	void printOutOfRange()
+	{
+		print('o'); print('u'); print('t'); print(' ');
+		print('o'); print('f'); print(' ');
+		print('r'); print('a'); print('n'); print('g'); print('e');
+		print(eol);
+		return;
+	}
+
+	void main()
+		int i;
+		int swap;
+	{
+		x = 5;
+		y = 10;
+		z = x + y * 2;
+		print(z); // 25
+		print(eol);
+		z = (x + y) * 2;
+		print(z); // 30
+		print(eol);
+		
+		c1 = 'A';
+		c2 = 'B';
+		flag = true;
+		if (flag == false || true) print(c1); // A
+		else print(c2);
+		print(eol);
+		
+		arrayLength = 5;
+		array = new int[arrayLength];	
+		i = 0;	
+		do {
+			array[i] = i + 1;
+			i++;
+		} while (i < arrayLength);
+		result = square map array;
+		print(result); // 55
+		print(eol);
+		
+		print(sumOfSquares(array)); // 55
+		print(eol);
+		
+		array = null;
+		print(sumOfSquares(array)); // 0
+		print(eol);
+		
+		arrayLength = 10;
+		array = new int[arrayLength];
+		i = 0;
+		do {
+			read(array[i]);
+			if (array[i] == 0) continue;
+			array[i] = 100 / array[i];
+		} while (i < arrayLength - 1, i++);
+		result = echo map array;
+		print(result); // sum of division results
+		print(eol);
+		
+		setO = new set[5];
+		setE = new set[5];
+		setU = new set[10];
+		i = 0;
+		do {
+			arrayO[i] = generateElement(i, true);
+			arrayE[i] = generateElement(i, false);
+		} while (i < 4, i++);
+		addAll(setO, arrayO);
+		addAll(setE, arrayE);
+		setU = setO union setE;
+		print(setU); // [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+		print(eol);
+		
+		arrayO = new int[cap];
+		arrayE = new int[cap];
+		setO = new set[cap];
+		setE = new set[cap];
+		setU = new set[2 * cap];
+		read(fact1);
+		read(fact2);
+		i = 0;
+		do {
+			arrayO[i] = mul(i, fact1);
+			arrayE[i] = mul(i, fact2);
+		} while (i < cap - 1, i++);
+		addAll(setO, arrayO);
+		addAll(setE, arrayE);
+		setU = setO union setE;
+		print(setU); // set of results from multiplication using previously read factors
+		print(eol);
+		setO = null;
+		setE = null;
+		setU = null;
+		
+		i = 0;
+		do {
+			read(x);
+			if (isOutOfRange(x)) {
+				printOutOfRange();
+				continue;
+			}
+			read(y);
+			if (isOutOfRange(y)) {
+				printOutOfRange();
+				continue;
+			}
+			if (x < y) {
+				swap = x;
+				x = y;
+				y = swap;
+			}
+			array[i] = sum(x, -y);
+			i++;
+		} while (i < arrayLength);
+		result = dec map array;
+		print(result); // sum of decremented differences of previously read values within a range
+		print(eol);
+		
+		{
+			i = 0;
+			result = 0;
+			do {
+				if (i == 5) break;
+				result = result + i;
+				i++;
+			} while ();
+			print(result); // 10
+			print(eol, 5);
+		}
+	}
+}
