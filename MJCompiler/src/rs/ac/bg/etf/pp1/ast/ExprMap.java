@@ -1,36 +1,36 @@
 // generated with ast extension for cup
 // version 0.8
-// 8/8/2025 21:3:19
+// 26/8/2025 16:11:53
 
 
 package rs.ac.bg.etf.pp1.ast;
 
 public class ExprMap extends Expr {
 
-    private Designator Designator;
-    private Designator Designator1;
+    private ExprMapMethodName ExprMapMethodName;
+    private ExprMapArrName ExprMapArrName;
 
-    public ExprMap (Designator Designator, Designator Designator1) {
-        this.Designator=Designator;
-        if(Designator!=null) Designator.setParent(this);
-        this.Designator1=Designator1;
-        if(Designator1!=null) Designator1.setParent(this);
+    public ExprMap (ExprMapMethodName ExprMapMethodName, ExprMapArrName ExprMapArrName) {
+        this.ExprMapMethodName=ExprMapMethodName;
+        if(ExprMapMethodName!=null) ExprMapMethodName.setParent(this);
+        this.ExprMapArrName=ExprMapArrName;
+        if(ExprMapArrName!=null) ExprMapArrName.setParent(this);
     }
 
-    public Designator getDesignator() {
-        return Designator;
+    public ExprMapMethodName getExprMapMethodName() {
+        return ExprMapMethodName;
     }
 
-    public void setDesignator(Designator Designator) {
-        this.Designator=Designator;
+    public void setExprMapMethodName(ExprMapMethodName ExprMapMethodName) {
+        this.ExprMapMethodName=ExprMapMethodName;
     }
 
-    public Designator getDesignator1() {
-        return Designator1;
+    public ExprMapArrName getExprMapArrName() {
+        return ExprMapArrName;
     }
 
-    public void setDesignator1(Designator Designator1) {
-        this.Designator1=Designator1;
+    public void setExprMapArrName(ExprMapArrName ExprMapArrName) {
+        this.ExprMapArrName=ExprMapArrName;
     }
 
     public void accept(Visitor visitor) {
@@ -38,19 +38,19 @@ public class ExprMap extends Expr {
     }
 
     public void childrenAccept(Visitor visitor) {
-        if(Designator!=null) Designator.accept(visitor);
-        if(Designator1!=null) Designator1.accept(visitor);
+        if(ExprMapMethodName!=null) ExprMapMethodName.accept(visitor);
+        if(ExprMapArrName!=null) ExprMapArrName.accept(visitor);
     }
 
     public void traverseTopDown(Visitor visitor) {
         accept(visitor);
-        if(Designator!=null) Designator.traverseTopDown(visitor);
-        if(Designator1!=null) Designator1.traverseTopDown(visitor);
+        if(ExprMapMethodName!=null) ExprMapMethodName.traverseTopDown(visitor);
+        if(ExprMapArrName!=null) ExprMapArrName.traverseTopDown(visitor);
     }
 
     public void traverseBottomUp(Visitor visitor) {
-        if(Designator!=null) Designator.traverseBottomUp(visitor);
-        if(Designator1!=null) Designator1.traverseBottomUp(visitor);
+        if(ExprMapMethodName!=null) ExprMapMethodName.traverseBottomUp(visitor);
+        if(ExprMapArrName!=null) ExprMapArrName.traverseBottomUp(visitor);
         accept(visitor);
     }
 
@@ -59,14 +59,14 @@ public class ExprMap extends Expr {
         buffer.append(tab);
         buffer.append("ExprMap(\n");
 
-        if(Designator!=null)
-            buffer.append(Designator.toString("  "+tab));
+        if(ExprMapMethodName!=null)
+            buffer.append(ExprMapMethodName.toString("  "+tab));
         else
             buffer.append(tab+"  null");
         buffer.append("\n");
 
-        if(Designator1!=null)
-            buffer.append(Designator1.toString("  "+tab));
+        if(ExprMapArrName!=null)
+            buffer.append(ExprMapArrName.toString("  "+tab));
         else
             buffer.append(tab+"  null");
         buffer.append("\n");

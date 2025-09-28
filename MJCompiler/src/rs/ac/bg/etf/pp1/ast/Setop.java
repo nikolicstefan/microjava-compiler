@@ -1,16 +1,17 @@
 // generated with ast extension for cup
 // version 0.8
-// 8/8/2025 21:3:19
+// 26/8/2025 16:11:53
 
 
 package rs.ac.bg.etf.pp1.ast;
 
-public class Setop implements SyntaxNode {
+public abstract class Setop implements SyntaxNode {
 
     private SyntaxNode parent;
+
     private int line;
-    public Setop () {
-    }
+
+    public java.lang.String string = null;
 
     public SyntaxNode getParent() {
         return parent;
@@ -28,28 +29,11 @@ public class Setop implements SyntaxNode {
         this.line=line;
     }
 
-    public void accept(Visitor visitor) {
-        visitor.visit(this);
-    }
+    public abstract void accept(Visitor visitor);
+    public abstract void childrenAccept(Visitor visitor);
+    public abstract void traverseTopDown(Visitor visitor);
+    public abstract void traverseBottomUp(Visitor visitor);
 
-    public void childrenAccept(Visitor visitor) {
-    }
-
-    public void traverseTopDown(Visitor visitor) {
-        accept(visitor);
-    }
-
-    public void traverseBottomUp(Visitor visitor) {
-        accept(visitor);
-    }
-
-    public String toString(String tab) {
-        StringBuffer buffer=new StringBuffer();
-        buffer.append(tab);
-        buffer.append("Setop(\n");
-
-        buffer.append(tab);
-        buffer.append(") [Setop]");
-        return buffer.toString();
-    }
+    public String toString() { return toString(""); }
+    public abstract String toString(String tab);
 }

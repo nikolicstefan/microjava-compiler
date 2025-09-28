@@ -1,13 +1,24 @@
 // generated with ast extension for cup
 // version 0.8
-// 8/8/2025 21:3:19
+// 26/8/2025 16:11:53
 
 
 package rs.ac.bg.etf.pp1.ast;
 
 public class MulopDiv extends Mulop {
 
-    public MulopDiv () {
+    private String div;
+
+    public MulopDiv (String div) {
+        this.div=div;
+    }
+
+    public String getDiv() {
+        return div;
+    }
+
+    public void setDiv(String div) {
+        this.div=div;
     }
 
     public void accept(Visitor visitor) {
@@ -29,6 +40,9 @@ public class MulopDiv extends Mulop {
         StringBuffer buffer=new StringBuffer();
         buffer.append(tab);
         buffer.append("MulopDiv(\n");
+
+        buffer.append(" "+tab+div);
+        buffer.append("\n");
 
         buffer.append(tab);
         buffer.append(") [MulopDiv]");

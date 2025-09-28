@@ -53,34 +53,25 @@ scan with {:
 	return s;
 :}
 
-terminal PROGRAM, LBRACE, RBRACE, CONST, ASSIGN, SEMI;
-terminal COMMA, LBRACKET, RBRACKET, LPAREN, RPAREN, VOID;
-terminal IF, BREAK, CONTINUE, RETURN, READ, PRINT, WHILE;
-terminal INC, DEC, MAP, MINUS, NEW, MUL, DIV, MOD, PLUS;
-terminal UNION, AND, OR, ELSE, DO;
+terminal PROGRAM, LBRACE, RBRACE, CONST, ASSIGN, SEMI, COMMA, LBRACKET, RBRACKET, LPAREN, RPAREN, VOID;
+terminal IF, BREAK, CONTINUE, RETURN, READ, PRINT, WHILE, INC, DEC, MAP, NEW, AND, OR, ELSE, DO;
 
-terminal String IDENT, EQ, NE, GT, GE, LT, LE;
+terminal String IDENT, MUL, DIV, MOD, PLUS, MINUS, UNION, EQ, NE, GT, GE, LT, LE;
 terminal Integer NUMBER;
 terminal Character CHAR;
 terminal Boolean BOOL;
 
-nonterminal Program, ProgramName, DeclList, Decl, ConstDecl, ConstInit;
-nonterminal Type, Literal, ConstInitList, VarDecl, Var, ArrDeclBrackets;
-nonterminal VarList, MethodDeclList, MethodDecl, MethodSignature;
-nonterminal MethodRetTypeName, RetType, FormPars, FormPar, FormParList;
-nonterminal VarDeclList, StatementList, Statement, DesignatorStatement;
-nonterminal DesignatorAssign, DesignatorName, Assignop, ActPars;
-nonterminal ActParList, ActPar, Mulop, Addop, Setop, ElseBlock;
-nonterminal RetVal, PrintRepCnt, LoopStart, LoopCond, PostIterStmt;
+nonterminal Program, ProgramName, DeclList, Decl, ConstDecl, ConstInit, Literal, ConstInitList, VarDecl;
+nonterminal Var, ArrDeclBrackets, VarList, MethodDeclList, MethodDecl, MethodSignature, RetType, FormPars;
+nonterminal FormPar, FormParList, VarDeclList, StatementList, Statement, DesignatorStatement;
+nonterminal AssignDesignator, Assignop, ActPars, ActParList, ActPar, ElseBlock, ElseBegin, DoWhileBegin;
+nonterminal DoWhileCond, DoWhileCondBegin, PostIterStmt, RetVal, PrintWidth;
 
-nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator;
-nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, TermList, Term;
-nonterminal rs.etf.pp1.symboltable.concepts.Struct FactorList, SignedFactor, Factor;
-nonterminal rs.etf.pp1.symboltable.concepts.Struct AccessorList, Accessor;
-
-nonterminal java.lang.String Relop;
-nonterminal rs.etf.pp1.symboltable.concepts.Struct Condition, CondTermList, CondTerm;
-nonterminal rs.etf.pp1.symboltable.concepts.Struct CondFactList, CondFact;
+nonterminal java.lang.String Mulop, Addop, Setop, Relop;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj MethodRetTypeName, Designator, DesignatorArrName;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Type, AssignValue, Expr, TermList, Term, FactorList;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct SignedFactor, Factor, ExprMapMethodName, ExprMapArrName;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Condition, CondTermList, CondTerm, CondFactList, CondFact;
 
 precedence left ELSE;
 
@@ -197,6 +188,8 @@ Statement ::= (StatementDesignator) DesignatorStatement SEMI
 			  |
 			  (StatementIfElse) IF LPAREN Condition RPAREN Statement ElseBlock
 			  |
+			  (StatementDoWhile) DoWhileBegin Statement WHILE LPAREN DoWhileCond RPAREN SEMI
+			  |
 			  (StatementBreak) BREAK SEMI
 			  |
 			  (StatementContinue) CONTINUE SEMI
@@ -205,14 +198,12 @@ Statement ::= (StatementDesignator) DesignatorStatement SEMI
 			  |
 			  (StatementRead) READ LPAREN Designator RPAREN SEMI
 			  |
-			  (StatementPrint) PRINT LPAREN Expr PrintRepCnt RPAREN SEMI
-			  |
-			  (StatementDoWhile) LoopStart Statement WHILE LPAREN LoopCond RPAREN SEMI
+			  (StatementPrint) PRINT LPAREN Expr PrintWidth RPAREN SEMI
 			  |
 			  (StatementBlock) LBRACE StatementList RBRACE
 			  ;
 
-DesignatorStatement ::= (DesignatorStatementAssign) DesignatorAssign
+DesignatorStatement ::= (DesignatorStatementAssign) AssignDesignator Assignop AssignValue
 						|
 						(DesignatorStatementFuncCall) Designator LPAREN ActPars RPAREN
 						|
@@ -221,32 +212,30 @@ DesignatorStatement ::= (DesignatorStatementAssign) DesignatorAssign
 						(DesignatorStatementDec) Designator DEC
 						;
 
-DesignatorAssign ::= (DesignatorAssignSimple) Designator Assignop Expr
-					 |
-					 (DesignatorAssignSet) Designator Assignop Designator Setop Designator
-					 |
-					 (DesignatorAssignError) error:e
-					 {: String errorDescription = "invalid assignment statement construction";
-					 String msg = "Syntax error at line " + eleft + ": " + errorDescription + ". Syntax error recovery";
-					 parser.report_error(msg, null); :}
-					 ;
+AssignDesignator ::= (AssignDesignator) Designator;
 
-Designator ::= (Designator) DesignatorName AccessorList;
+Designator ::= (DesignatorSimple) IDENT:designatorName
+			   |
+			   (DesignatorArr) DesignatorArrName LBRACKET Expr RBRACKET
+			   ;
 
-DesignatorName ::= (DesignatorName) IDENT:designatorName;
-
-AccessorList ::= (AccessorListExists) Accessor AccessorList
-				 |
-				 (AccessorListEpsilon) /* epsilon */
-				 ;
-
-Accessor ::= (AccessorArr) LBRACKET Expr RBRACKET;
+DesignatorArrName ::= (DesignatorArrName) IDENT:designatorName;
 
 Assignop ::= (Assignop) ASSIGN;
 
+AssignValue ::= (AssignValueExpr) Expr
+				|
+				(AssignValueSet) Designator Setop Designator
+				|
+				(AssignValueError) error:e
+				{: String errorDescription = "invalid assignment statement construction";
+				String msg = "Syntax error at line " + eleft + ": " + errorDescription + ". Syntax error recovery";
+				parser.report_error(msg, null); :}
+				;
+
 Expr ::= (ExprArithm) TermList
 		 |
-		 (ExprMap) Designator MAP Designator
+		 (ExprMap) ExprMapMethodName MAP ExprMapArrName
 		 ;
 
 TermList ::= (TermListAddop) TermList Addop Term
@@ -293,19 +282,23 @@ ActParList ::= (ActParListComma) COMMA ActPar ActParList
 
 ActPar ::= (ActPar) Expr;
 
-Mulop ::= (MulopMul) MUL
+Mulop ::= (MulopMul) MUL:mul
 		  |
-		  (MulopDiv) DIV
+		  (MulopDiv) DIV:div
 		  |
-		  (MulopMod) MOD
+		  (MulopMod) MOD:mod
 		  ;
 
-Addop ::= (AddopPlus) PLUS
+Addop ::= (AddopPlus) PLUS:plus
 		  |
-		  (AddopMinus) MINUS
+		  (AddopMinus) MINUS:minus
 		  ;
 
-Setop ::= (Setop) UNION;
+Setop ::= (SetopUnion) UNION:union;
+
+ExprMapMethodName ::= (ExprMapMethodName) Designator;
+
+ExprMapArrName ::= (ExprMapArrName) Designator;
 
 Condition ::= (ConditionValid) CondTermList
 			  |
@@ -345,29 +338,33 @@ Relop ::= (RelopEq) EQ:eq
 		  (RelopLe) LE:le
 		  ;
 
-ElseBlock ::= (ElseBlockExists) ELSE Statement
+ElseBlock ::= (ElseBlockExists) ElseBegin Statement
 			  |
 			  (ElseBlockEpsilon) /* epsilon */
 			  ;
+			  
+ElseBegin ::= (ElseBegin) ELSE;
+
+DoWhileBegin ::= (DoWhileBegin) DO;
+
+DoWhileCond ::= (DoWhileCondExists) DoWhileCondBegin Condition PostIterStmt
+				|
+				(DoWhileCondEpsilon) /* epsilon */
+				;
+
+DoWhileCondBegin ::= (DoWhileCondBegin) /* epsilon */;
+			 
+PostIterStmt ::= (PostIterStmtExists) COMMA DesignatorStatement
+				 |
+				 (PostIterStmtEpsilon) /* epsilon */
+				 ;
 
 RetVal ::= (RetValExists) Expr
 		   |
 		   (RetValEpsilon) /* epsilon */
 		   ;
 
-PrintRepCnt ::= (PrintRepCntExists) COMMA NUMBER
-				|
-				(PrintRepCntEpsilon) /* epsilon */
-				;
-				
-LoopStart ::= (LoopStart) DO;
-
-LoopCond ::= (LoopCondExists) Condition PostIterStmt
-			 |
-			 (LoopCondEpsilon) /* epsilon */
-			 ;
-
-PostIterStmt ::= (PostIterStmtExists) COMMA DesignatorStatement
-				 |
-				 (PostIterStmtEpsilon) /* epsilon */
-				 ;
+PrintWidth ::= (PrintWidthExists) COMMA NUMBER
+			   |
+			   (PrintWidthEpsilon) /* epsilon */
+			   ;

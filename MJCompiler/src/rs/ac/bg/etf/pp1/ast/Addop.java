@@ -1,6 +1,6 @@
 // generated with ast extension for cup
 // version 0.8
-// 8/8/2025 21:3:19
+// 26/8/2025 16:11:53
 
 
 package rs.ac.bg.etf.pp1.ast;
@@ -10,6 +10,8 @@ public abstract class Addop implements SyntaxNode {
     private SyntaxNode parent;
 
     private int line;
+
+    public java.lang.String string = null;
 
     public SyntaxNode getParent() {
         return parent;

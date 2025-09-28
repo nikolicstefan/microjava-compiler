@@ -1,16 +1,26 @@
 // generated with ast extension for cup
 // version 0.8
-// 8/8/2025 21:3:19
+// 26/8/2025 16:11:53
 
 
 package rs.ac.bg.etf.pp1.ast;
 
 public class LiteralNumberNeg extends Literal {
 
+    private String M1;
     private Integer numberLiteral;
 
-    public LiteralNumberNeg (Integer numberLiteral) {
+    public LiteralNumberNeg (String M1, Integer numberLiteral) {
+        this.M1=M1;
         this.numberLiteral=numberLiteral;
+    }
+
+    public String getM1() {
+        return M1;
+    }
+
+    public void setM1(String M1) {
+        this.M1=M1;
     }
 
     public Integer getNumberLiteral() {
@@ -40,6 +50,9 @@ public class LiteralNumberNeg extends Literal {
         StringBuffer buffer=new StringBuffer();
         buffer.append(tab);
         buffer.append("LiteralNumberNeg(\n");
+
+        buffer.append(" "+tab+M1);
+        buffer.append("\n");
 
         buffer.append(" "+tab+numberLiteral);
         buffer.append("\n");

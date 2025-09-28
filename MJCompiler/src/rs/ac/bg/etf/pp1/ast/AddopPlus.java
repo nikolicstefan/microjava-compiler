@@ -1,13 +1,24 @@
 // generated with ast extension for cup
 // version 0.8
-// 8/8/2025 21:3:19
+// 26/8/2025 16:11:53
 
 
 package rs.ac.bg.etf.pp1.ast;
 
 public class AddopPlus extends Addop {
 
-    public AddopPlus () {
+    private String plus;
+
+    public AddopPlus (String plus) {
+        this.plus=plus;
+    }
+
+    public String getPlus() {
+        return plus;
+    }
+
+    public void setPlus(String plus) {
+        this.plus=plus;
     }
 
     public void accept(Visitor visitor) {
@@ -29,6 +40,9 @@ public class AddopPlus extends Addop {
         StringBuffer buffer=new StringBuffer();
         buffer.append(tab);
         buffer.append("AddopPlus(\n");
+
+        buffer.append(" "+tab+plus);
+        buffer.append("\n");
 
         buffer.append(tab);
         buffer.append(") [AddopPlus]");

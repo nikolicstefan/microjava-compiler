@@ -53,13 +53,10 @@ scan with {:
 	return s;
 :}
 
-terminal PROGRAM, LBRACE, RBRACE, CONST, ASSIGN, SEMI;
-terminal COMMA, LBRACKET, RBRACKET, LPAREN, RPAREN, VOID;
-terminal IF, BREAK, CONTINUE, RETURN, READ, PRINT, WHILE;
-terminal INC, DEC, MAP, MINUS, NEW, MUL, DIV, MOD, PLUS;
-terminal UNION, AND, OR, ELSE, DO;
+terminal PROGRAM, LBRACE, RBRACE, CONST, ASSIGN, SEMI, COMMA, LBRACKET, RBRACKET, LPAREN, RPAREN, VOID;
+terminal IF, BREAK, CONTINUE, RETURN, READ, PRINT, WHILE, INC, DEC, MAP, NEW, AND, OR, ELSE, DO;
 
-terminal String IDENT, EQ, NE, GT, GE, LT, LE;
+terminal String IDENT, MUL, DIV, MOD, PLUS, MINUS, UNION, EQ, NE, GT, GE, LT, LE;
 terminal Integer NUMBER;
 terminal Character CHAR;
 terminal Boolean BOOL;
@@ -70,7 +67,6 @@ nonterminal DeclList DeclList;
 nonterminal Decl Decl;
 nonterminal ConstDecl ConstDecl;
 nonterminal ConstInit ConstInit;
-nonterminal Type Type;
 nonterminal Literal Literal;
 nonterminal ConstInitList ConstInitList;
 nonterminal VarDecl VarDecl;
@@ -80,7 +76,6 @@ nonterminal VarList VarList;
 nonterminal MethodDeclList MethodDeclList;
 nonterminal MethodDecl MethodDecl;
 nonterminal MethodSignature MethodSignature;
-nonterminal MethodRetTypeName MethodRetTypeName;
 nonterminal RetType RetType;
 nonterminal FormPars FormPars;
 nonterminal FormPar FormPar;
@@ -89,30 +84,25 @@ nonterminal VarDeclList VarDeclList;
 nonterminal StatementList StatementList;
 nonterminal Statement Statement;
 nonterminal DesignatorStatement DesignatorStatement;
-nonterminal DesignatorAssign DesignatorAssign;
-nonterminal DesignatorName DesignatorName;
+nonterminal AssignDesignator AssignDesignator;
 nonterminal Assignop Assignop;
 nonterminal ActPars ActPars;
 nonterminal ActParList ActParList;
 nonterminal ActPar ActPar;
-nonterminal Mulop Mulop;
-nonterminal Addop Addop;
-nonterminal Setop Setop;
 nonterminal ElseBlock ElseBlock;
-nonterminal RetVal RetVal;
-nonterminal PrintRepCnt PrintRepCnt;
-nonterminal LoopStart LoopStart;
-nonterminal LoopCond LoopCond;
+nonterminal ElseBegin ElseBegin;
+nonterminal DoWhileBegin DoWhileBegin;
+nonterminal DoWhileCond DoWhileCond;
+nonterminal DoWhileCondBegin DoWhileCondBegin;
 nonterminal PostIterStmt PostIterStmt;
+nonterminal RetVal RetVal;
+nonterminal PrintWidth PrintWidth;
 
-nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator;
-nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, TermList, Term;
-nonterminal rs.etf.pp1.symboltable.concepts.Struct FactorList, SignedFactor, Factor;
-nonterminal rs.etf.pp1.symboltable.concepts.Struct AccessorList, Accessor;
-
-nonterminal java.lang.String Relop;
-nonterminal rs.etf.pp1.symboltable.concepts.Struct Condition, CondTermList, CondTerm;
-nonterminal rs.etf.pp1.symboltable.concepts.Struct CondFactList, CondFact;
+nonterminal java.lang.String Mulop, Addop, Setop, Relop;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj MethodRetTypeName, Designator, DesignatorArrName;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Type, AssignValue, Expr, TermList, Term, FactorList;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct SignedFactor, Factor, ExprMapMethodName, ExprMapArrName;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Condition, CondTermList, CondTerm, CondFactList, CondFact;
 
 precedence left ELSE;
 
@@ -149,7 +139,7 @@ Type ::= (Type) IDENT:typeName {: RESULT=new Type(typeName); RESULT.setLine(type
 
 Literal ::= (LiteralNumberPos) NUMBER:numberLiteral {: RESULT=new LiteralNumberPos(numberLiteral); RESULT.setLine(numberLiteralleft); :}
 			|
-			(LiteralNumberNeg) MINUS NUMBER:numberLiteral {: RESULT=new LiteralNumberNeg(numberLiteral); RESULT.setLine(numberLiteralleft); :}
+			(LiteralNumberNeg) MINUS:M1 NUMBER:numberLiteral {: RESULT=new LiteralNumberNeg(M1, numberLiteral); RESULT.setLine(M1left); :}
 			|
 			(LiteralChar) CHAR:charLiteral {: RESULT=new LiteralChar(charLiteral); RESULT.setLine(charLiteralleft); :}
 			|
@@ -229,6 +219,8 @@ Statement ::= (StatementDesignator) DesignatorStatement:D1 SEMI {: RESULT=new St
 			  |
 			  (StatementIfElse) IF LPAREN Condition:C1 RPAREN Statement:S2 ElseBlock:E3 {: RESULT=new StatementIfElse(C1, S2, E3); RESULT.setLine(C1left); :}
 			  |
+			  (StatementDoWhile) DoWhileBegin:D1 Statement:S2 WHILE LPAREN DoWhileCond:D3 RPAREN SEMI {: RESULT=new StatementDoWhile(D1, S2, D3); RESULT.setLine(D1left); :}
+			  |
 			  (StatementBreak) BREAK SEMI {: RESULT=new StatementBreak(); :}
 			  |
 			  (StatementContinue) CONTINUE SEMI {: RESULT=new StatementContinue(); :}
@@ -237,14 +229,12 @@ Statement ::= (StatementDesignator) DesignatorStatement:D1 SEMI {: RESULT=new St
 			  |
 			  (StatementRead) READ LPAREN Designator:D1 RPAREN SEMI {: RESULT=new StatementRead(D1); RESULT.setLine(D1left); :}
 			  |
-			  (StatementPrint) PRINT LPAREN Expr:E1 PrintRepCnt:P2 RPAREN SEMI {: RESULT=new StatementPrint(E1, P2); RESULT.setLine(E1left); :}
-			  |
-			  (StatementDoWhile) LoopStart:L1 Statement:S2 WHILE LPAREN LoopCond:L3 RPAREN SEMI {: RESULT=new StatementDoWhile(L1, S2, L3); RESULT.setLine(L1left); :}
+			  (StatementPrint) PRINT LPAREN Expr:E1 PrintWidth:P2 RPAREN SEMI {: RESULT=new StatementPrint(E1, P2); RESULT.setLine(E1left); :}
 			  |
 			  (StatementBlock) LBRACE StatementList:S1 RBRACE {: RESULT=new StatementBlock(S1); RESULT.setLine(S1left); :}
 			  ;
 
-DesignatorStatement ::= (DesignatorStatementAssign) DesignatorAssign:D1 {: RESULT=new DesignatorStatementAssign(D1); RESULT.setLine(D1left); :}
+DesignatorStatement ::= (DesignatorStatementAssign) AssignDesignator:A1 Assignop:A2 AssignValue:A3 {: RESULT=new DesignatorStatementAssign(A1, A2, A3); RESULT.setLine(A1left); :}
 						|
 						(DesignatorStatementFuncCall) Designator:D1 LPAREN ActPars:A2 RPAREN {: RESULT=new DesignatorStatementFuncCall(D1, A2); RESULT.setLine(D1left); :}
 						|
@@ -253,32 +243,30 @@ DesignatorStatement ::= (DesignatorStatementAssign) DesignatorAssign:D1 {: RESUL
 						(DesignatorStatementDec) Designator:D1 DEC {: RESULT=new DesignatorStatementDec(D1); RESULT.setLine(D1left); :}
 						;
 
-DesignatorAssign ::= (DesignatorAssignSimple) Designator:D1 Assignop:A2 Expr:E3 {: RESULT=new DesignatorAssignSimple(D1, A2, E3); RESULT.setLine(D1left); :}
-					 |
-					 (DesignatorAssignSet) Designator:D1 Assignop:A2 Designator:D3 Setop:S4 Designator:D5 {: RESULT=new DesignatorAssignSet(D1, A2, D3, S4, D5); RESULT.setLine(D1left); :}
-					 |
-					 (DesignatorAssignError) error:e
-					 {: String errorDescription = "invalid assignment statement construction";
-					 String msg = "Syntax error at line " + eleft + ": " + errorDescription + ". Syntax error recovery";
-					 parser.report_error(msg, null); :} {: RESULT=new DesignatorAssignError(); :}
-					 ;
+AssignDesignator ::= (AssignDesignator) Designator:D1 {: RESULT=new AssignDesignator(D1); RESULT.setLine(D1left); :};
 
-Designator ::= (Designator) DesignatorName:D1 AccessorList:A2 {: RESULT=new Designator(D1, A2); RESULT.setLine(D1left); :};
+Designator ::= (DesignatorSimple) IDENT:designatorName {: RESULT=new DesignatorSimple(designatorName); RESULT.setLine(designatorNameleft); :}
+			   |
+			   (DesignatorArr) DesignatorArrName:D1 LBRACKET Expr:E2 RBRACKET {: RESULT=new DesignatorArr(D1, E2); RESULT.setLine(D1left); :}
+			   ;
 
-DesignatorName ::= (DesignatorName) IDENT:designatorName {: RESULT=new DesignatorName(designatorName); RESULT.setLine(designatorNameleft); :};
-
-AccessorList ::= (AccessorListExists) Accessor:A1 AccessorList:A2 {: RESULT=new AccessorListExists(A1, A2); RESULT.setLine(A1left); :}
-				 |
-				 (AccessorListEpsilon) {: RESULT=new AccessorListEpsilon(); :} /* epsilon */
-				 ;
-
-Accessor ::= (AccessorArr) LBRACKET Expr:E1 RBRACKET {: RESULT=new AccessorArr(E1); RESULT.setLine(E1left); :};
+DesignatorArrName ::= (DesignatorArrName) IDENT:designatorName {: RESULT=new DesignatorArrName(designatorName); RESULT.setLine(designatorNameleft); :};
 
 Assignop ::= (Assignop) ASSIGN {: RESULT=new Assignop(); :};
 
+AssignValue ::= (AssignValueExpr) Expr:E1 {: RESULT=new AssignValueExpr(E1); RESULT.setLine(E1left); :}
+				|
+				(AssignValueSet) Designator:D1 Setop:S2 Designator:D3 {: RESULT=new AssignValueSet(D1, S2, D3); RESULT.setLine(D1left); :}
+				|
+				(AssignValueError) error:e
+				{: String errorDescription = "invalid assignment statement construction";
+				String msg = "Syntax error at line " + eleft + ": " + errorDescription + ". Syntax error recovery";
+				parser.report_error(msg, null); :} {: RESULT=new AssignValueError(); :}
+				;
+
 Expr ::= (ExprArithm) TermList:T1 {: RESULT=new ExprArithm(T1); RESULT.setLine(T1left); :}
 		 |
-		 (ExprMap) Designator:D1 MAP Designator:D2 {: RESULT=new ExprMap(D1, D2); RESULT.setLine(D1left); :}
+		 (ExprMap) ExprMapMethodName:E1 MAP ExprMapArrName:E2 {: RESULT=new ExprMap(E1, E2); RESULT.setLine(E1left); :}
 		 ;
 
 TermList ::= (TermListAddop) TermList:T1 Addop:A2 Term:T3 {: RESULT=new TermListAddop(T1, A2, T3); RESULT.setLine(T1left); :}
@@ -295,7 +283,7 @@ FactorList ::= (FactorListMulop) FactorList:F1 Mulop:M2 SignedFactor:S3 {: RESUL
 
 SignedFactor ::= (SignedFactorPos) Factor:F1 {: RESULT=new SignedFactorPos(F1); RESULT.setLine(F1left); :}
 				 |
-				 (SignedFactorNeg) MINUS Factor:F1 {: RESULT=new SignedFactorNeg(F1); RESULT.setLine(F1left); :}
+				 (SignedFactorNeg) MINUS:M1 Factor:F2 {: RESULT=new SignedFactorNeg(M1, F2); RESULT.setLine(M1left); :}
 				 ;
 
 Factor ::= (FactorDesignator) Designator:D1 {: RESULT=new FactorDesignator(D1); RESULT.setLine(D1left); :}
@@ -325,19 +313,23 @@ ActParList ::= (ActParListComma) COMMA ActPar:A1 ActParList:A2 {: RESULT=new Act
 
 ActPar ::= (ActPar) Expr:E1 {: RESULT=new ActPar(E1); RESULT.setLine(E1left); :};
 
-Mulop ::= (MulopMul) MUL {: RESULT=new MulopMul(); :}
+Mulop ::= (MulopMul) MUL:mul {: RESULT=new MulopMul(mul); RESULT.setLine(mulleft); :}
 		  |
-		  (MulopDiv) DIV {: RESULT=new MulopDiv(); :}
+		  (MulopDiv) DIV:div {: RESULT=new MulopDiv(div); RESULT.setLine(divleft); :}
 		  |
-		  (MulopMod) MOD {: RESULT=new MulopMod(); :}
+		  (MulopMod) MOD:mod {: RESULT=new MulopMod(mod); RESULT.setLine(modleft); :}
 		  ;
 
-Addop ::= (AddopPlus) PLUS {: RESULT=new AddopPlus(); :}
+Addop ::= (AddopPlus) PLUS:plus {: RESULT=new AddopPlus(plus); RESULT.setLine(plusleft); :}
 		  |
-		  (AddopMinus) MINUS {: RESULT=new AddopMinus(); :}
+		  (AddopMinus) MINUS:minus {: RESULT=new AddopMinus(minus); RESULT.setLine(minusleft); :}
 		  ;
 
-Setop ::= (Setop) UNION {: RESULT=new Setop(); :};
+Setop ::= (SetopUnion) UNION:union {: RESULT=new SetopUnion(union); RESULT.setLine(unionleft); :};
+
+ExprMapMethodName ::= (ExprMapMethodName) Designator:D1 {: RESULT=new ExprMapMethodName(D1); RESULT.setLine(D1left); :};
+
+ExprMapArrName ::= (ExprMapArrName) Designator:D1 {: RESULT=new ExprMapArrName(D1); RESULT.setLine(D1left); :};
 
 Condition ::= (ConditionValid) CondTermList:C1 {: RESULT=new ConditionValid(C1); RESULT.setLine(C1left); :}
 			  |
@@ -377,29 +369,33 @@ Relop ::= (RelopEq) EQ:eq {: RESULT=new RelopEq(eq); RESULT.setLine(eqleft); :}
 		  (RelopLe) LE:le {: RESULT=new RelopLe(le); RESULT.setLine(leleft); :}
 		  ;
 
-ElseBlock ::= (ElseBlockExists) ELSE Statement:S1 {: RESULT=new ElseBlockExists(S1); RESULT.setLine(S1left); :}
+ElseBlock ::= (ElseBlockExists) ElseBegin:E1 Statement:S2 {: RESULT=new ElseBlockExists(E1, S2); RESULT.setLine(E1left); :}
 			  |
 			  (ElseBlockEpsilon) {: RESULT=new ElseBlockEpsilon(); :} /* epsilon */
 			  ;
+			  
+ElseBegin ::= (ElseBegin) ELSE {: RESULT=new ElseBegin(); :};
+
+DoWhileBegin ::= (DoWhileBegin) DO {: RESULT=new DoWhileBegin(); :};
+
+DoWhileCond ::= (DoWhileCondExists) DoWhileCondBegin:D1 Condition:C2 PostIterStmt:P3 {: RESULT=new DoWhileCondExists(D1, C2, P3); RESULT.setLine(D1left); :}
+				|
+				(DoWhileCondEpsilon) {: RESULT=new DoWhileCondEpsilon(); :} /* epsilon */
+				;
+
+DoWhileCondBegin ::= (DoWhileCondBegin) {: RESULT=new DoWhileCondBegin(); :} /* epsilon */;
+			 
+PostIterStmt ::= (PostIterStmtExists) COMMA DesignatorStatement:D1 {: RESULT=new PostIterStmtExists(D1); RESULT.setLine(D1left); :}
+				 |
+				 (PostIterStmtEpsilon) {: RESULT=new PostIterStmtEpsilon(); :} /* epsilon */
+				 ;
 
 RetVal ::= (RetValExists) Expr:E1 {: RESULT=new RetValExists(E1); RESULT.setLine(E1left); :}
 		   |
 		   (RetValEpsilon) {: RESULT=new RetValEpsilon(); :} /* epsilon */
 		   ;
 
-PrintRepCnt ::= (PrintRepCntExists) COMMA NUMBER:N1 {: RESULT=new PrintRepCntExists(N1); RESULT.setLine(N1left); :}
-				|
-				(PrintRepCntEpsilon) {: RESULT=new PrintRepCntEpsilon(); :} /* epsilon */
-				;
-				
-LoopStart ::= (LoopStart) DO {: RESULT=new LoopStart(); :};
-
-LoopCond ::= (LoopCondExists) Condition:C1 PostIterStmt:P2 {: RESULT=new LoopCondExists(C1, P2); RESULT.setLine(C1left); :}
-			 |
-			 (LoopCondEpsilon) {: RESULT=new LoopCondEpsilon(); :} /* epsilon */
-			 ;
-
-PostIterStmt ::= (PostIterStmtExists) COMMA DesignatorStatement:D1 {: RESULT=new PostIterStmtExists(D1); RESULT.setLine(D1left); :}
-				 |
-				 (PostIterStmtEpsilon) {: RESULT=new PostIterStmtEpsilon(); :} /* epsilon */
-				 ;
+PrintWidth ::= (PrintWidthExists) COMMA NUMBER:N1 {: RESULT=new PrintWidthExists(N1); RESULT.setLine(N1left); :}
+			   |
+			   (PrintWidthEpsilon) {: RESULT=new PrintWidthEpsilon(); :} /* epsilon */
+			   ;

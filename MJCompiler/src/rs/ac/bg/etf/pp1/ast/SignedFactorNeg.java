@@ -1,17 +1,27 @@
 // generated with ast extension for cup
 // version 0.8
-// 8/8/2025 21:3:19
+// 26/8/2025 16:11:53
 
 
 package rs.ac.bg.etf.pp1.ast;
 
 public class SignedFactorNeg extends SignedFactor {
 
+    private String M1;
     private Factor Factor;
 
-    public SignedFactorNeg (Factor Factor) {
+    public SignedFactorNeg (String M1, Factor Factor) {
+        this.M1=M1;
         this.Factor=Factor;
         if(Factor!=null) Factor.setParent(this);
+    }
+
+    public String getM1() {
+        return M1;
+    }
+
+    public void setM1(String M1) {
+        this.M1=M1;
     }
 
     public Factor getFactor() {
@@ -44,6 +54,9 @@ public class SignedFactorNeg extends SignedFactor {
         StringBuffer buffer=new StringBuffer();
         buffer.append(tab);
         buffer.append("SignedFactorNeg(\n");
+
+        buffer.append(" "+tab+M1);
+        buffer.append("\n");
 
         if(Factor!=null)
             buffer.append(Factor.toString("  "+tab));

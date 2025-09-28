@@ -1,13 +1,24 @@
 // generated with ast extension for cup
 // version 0.8
-// 8/8/2025 21:3:19
+// 26/8/2025 16:11:53
 
 
 package rs.ac.bg.etf.pp1.ast;
 
 public class MulopMod extends Mulop {
 
-    public MulopMod () {
+    private String mod;
+
+    public MulopMod (String mod) {
+        this.mod=mod;
+    }
+
+    public String getMod() {
+        return mod;
+    }
+
+    public void setMod(String mod) {
+        this.mod=mod;
     }
 
     public void accept(Visitor visitor) {
@@ -29,6 +40,9 @@ public class MulopMod extends Mulop {
         StringBuffer buffer=new StringBuffer();
         buffer.append(tab);
         buffer.append("MulopMod(\n");
+
+        buffer.append(" "+tab+mod);
+        buffer.append("\n");
 
         buffer.append(tab);
         buffer.append(") [MulopMod]");

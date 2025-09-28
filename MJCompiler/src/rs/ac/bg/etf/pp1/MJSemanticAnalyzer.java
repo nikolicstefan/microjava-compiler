@@ -111,7 +111,7 @@ public class MJSemanticAnalyzer extends VisitorAdaptor {
 
 		// fpPos
 		message += obj.getFpPos();
-		
+
 		// locals
 		if (objKind == Obj.Meth) {
 			message += ", locals: ";
@@ -184,23 +184,9 @@ public class MJSemanticAnalyzer extends VisitorAdaptor {
 			constObj.setLevel(-1);
 		}
 
-		Obj methodObj = Tab.insert(Obj.Meth, "add", Tab.noType);
-		Tab.openScope();
-		Tab.insert(Obj.Var, "a", setType);
-		Tab.insert(Obj.Var, "b", Tab.intType);
-		Tab.chainLocalSymbols(methodObj);
-		Tab.closeScope();
-
-		methodObj = Tab.insert(Obj.Meth, "addAll", Tab.noType);
-		Tab.openScope();
-		Tab.insert(Obj.Var, "a", setType);
-		Tab.insert(Obj.Var, "b", new SpecStruct(SpecStruct.Array, Tab.intType));
-		Tab.chainLocalSymbols(methodObj);
-		Tab.closeScope();
-
-		String[] methodNames = { "chr", "ord", "len", "add", "addAll" };
+		String[] methodNames = { "chr", "ord", "len" };
 		for (String methodName : methodNames) {
-			methodObj = Tab.find(methodName);
+			Obj methodObj = Tab.find(methodName);
 			Collection<Obj> locals = methodObj.getLocalSymbols();
 			methodObj.setLevel(locals.size());
 			for (Obj local : locals) {
@@ -208,11 +194,43 @@ public class MJSemanticAnalyzer extends VisitorAdaptor {
 				local.setFpPos(1);
 			}
 		}
+
+		Obj methodObj = Tab.insert(Obj.Meth, "add", Tab.noType);
+		Tab.openScope();
+		Obj varObj = Tab.insert(Obj.Var, "a", setType);
+		varObj.setLevel(1);
+		varObj.setFpPos(1);
+		varObj = Tab.insert(Obj.Var, "b", Tab.intType);
+		varObj.setLevel(1);
+		varObj.setFpPos(1);
+		varObj = Tab.insert(Obj.Var, "size", Tab.intType);
+		varObj.setLevel(1);
+		varObj = Tab.insert(Obj.Var, "i", Tab.intType);
+		varObj.setLevel(1);
+		Tab.chainLocalSymbols(methodObj);
+		Tab.closeScope();
+		methodObj.setLevel(2);
+
+		methodObj = Tab.insert(Obj.Meth, "addAll", Tab.noType);
+		Tab.openScope();
+		varObj = Tab.insert(Obj.Var, "a", setType);
+		varObj.setLevel(1);
+		varObj.setFpPos(1);
+		varObj = Tab.insert(Obj.Var, "b", new SpecStruct(SpecStruct.Array, Tab.intType));
+		varObj.setLevel(1);
+		varObj.setFpPos(1);
+		varObj = Tab.insert(Obj.Var, "size", Tab.intType);
+		varObj.setLevel(1);
+		varObj = Tab.insert(Obj.Var, "i", Tab.intType);
+		varObj.setLevel(1);
+		varObj = Tab.insert(Obj.Var, "j", Tab.intType);
+		varObj.setLevel(1);
+		Tab.chainLocalSymbols(methodObj);
+		Tab.closeScope();
+		methodObj.setLevel(2);
 	}
 
 	/* Semantic Analysis */
-
-	private static final int ACCESSOR_NONE = 0, ACCESSOR_ARRAY = 1;
 
 	private Obj programObj = null;
 	private boolean doesProgramHaveMain = false;
@@ -224,16 +242,21 @@ public class MJSemanticAnalyzer extends VisitorAdaptor {
 	private Obj currMethodObj = null;
 	private int currMethodFormParsCnt = 0;
 	private boolean doesCurrMethodHaveReturn = false;
-	private String currDesignatorName = "";
-	private int currAccessor = ACCESSOR_NONE;
 	private int currLoopNestingLevel = 0;
 	private List<Struct> currActParTypeList = new ArrayList<>();
+
+	private int nVars = 0;
+
+	public int getNVars() {
+		return nVars;
+	}
 
 	@Override
 	public void visit(Program program) {
 		if (!doesProgramHaveMain) {
 			report_error("program '" + programObj.getName() + "' does not contain a 'main' method", program);
 		}
+		nVars = Tab.currentScope().getnVars();
 		Tab.chainLocalSymbols(programObj);
 		Tab.closeScope();
 	}
@@ -275,6 +298,7 @@ public class MJSemanticAnalyzer extends VisitorAdaptor {
 			report_error("'" + typeName + "' is not a valid type", type);
 		}
 		currType = typeObj.getType();
+		type.struct = currType;
 	}
 
 	@Override
@@ -361,8 +385,10 @@ public class MJSemanticAnalyzer extends VisitorAdaptor {
 		if (methodObj != Tab.noObj) {
 			report_error("method '" + methodName + "' has already been declared", methodRetTypeName);
 			currMethodObj = new Obj(Obj.Meth, methodName, currMethodRetType);
+			methodRetTypeName.obj = Tab.noObj;
 		} else {
 			currMethodObj = Tab.insert(Obj.Meth, methodName, currMethodRetType);
+			methodRetTypeName.obj = currMethodObj;
 		}
 		Tab.openScope();
 	}
@@ -392,6 +418,11 @@ public class MJSemanticAnalyzer extends VisitorAdaptor {
 		currMethodFormParsCnt++;
 		isCurrVarArray = false;
 		currType = null;
+	}
+
+	@Override
+	public void visit(StatementDoWhile statementDoWhile) {
+		currLoopNestingLevel--;
 	}
 
 	@Override
@@ -440,8 +471,18 @@ public class MJSemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	@Override
-	public void visit(StatementDoWhile statementDoWhile) {
-		currLoopNestingLevel--;
+	public void visit(DesignatorStatementAssign designatorStatementAssign) {
+		Obj designatorObj = designatorStatementAssign.getAssignDesignator().getDesignator().obj;
+		String designatorName = designatorObj.getName();
+		int designatorKind = designatorObj.getKind();
+		Struct designatorType = designatorObj.getType();
+		Struct assignValueType = designatorStatementAssign.getAssignValue().struct;
+		if (designatorKind != Obj.Var && designatorKind != Obj.Elem) {
+			report_error("designator '" + designatorName + "' is not valid for assignment", designatorStatementAssign);
+		} else if (!assignValueType.assignableTo(designatorType)) {
+			report_error("assign value cannot be assigned to designator '" + designatorName + "'",
+					designatorStatementAssign);
+		}
 	}
 
 	@Override
@@ -503,105 +544,63 @@ public class MJSemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	@Override
-	public void visit(DesignatorAssignSimple designatorAssignSimple) {
-		Obj designatorObj = designatorAssignSimple.getDesignator().obj;
-		String designatorName = designatorObj.getName();
+	public void visit(AssignValueExpr assignValueExpr) {
+		assignValueExpr.struct = assignValueExpr.getExpr().struct;
+	}
+
+	@Override
+	public void visit(AssignValueSet assignValueSet) {
+		Struct leftDesignatorType = assignValueSet.getDesignator().obj.getType();
+		Struct rightDesignatorType = assignValueSet.getDesignator1().obj.getType();
+		if (leftDesignatorType != setType || rightDesignatorType != setType) {
+			report_error("operands of set operation must be of type set", assignValueSet);
+			assignValueSet.struct = Tab.noType;
+		} else {
+			assignValueSet.struct = setType;
+		}
+	}
+
+	@Override
+	public void visit(DesignatorSimple designatorSimple) {
+		String designatorName = designatorSimple.getDesignatorName();
+		Obj designatorObj = Tab.find(designatorName);
 		int designatorKind = designatorObj.getKind();
-		Struct designatorType = designatorObj.getType();
-		Struct exprType = designatorAssignSimple.getExpr().struct;
-		if (designatorKind != Obj.Var && designatorKind != Obj.Elem) {
-			report_error("designator '" + designatorName + "' is not valid for assignment", designatorAssignSimple);
-		} else if (!exprType.assignableTo(designatorType)) {
-			report_error("expression value cannot be assigned to designator '" + designatorName + "'",
-					designatorAssignSimple);
+		if (designatorObj.equals(Tab.noObj)) {
+			report_error("designator '" + designatorName + "' must be declared before use", designatorSimple);
+			designatorSimple.obj = Tab.noObj;
+		} else if (designatorKind != Obj.Con && designatorKind != Obj.Var && designatorKind != Obj.Meth) {
+			report_error("designator '" + designatorName + "' is not valid for this use", designatorSimple);
+			designatorSimple.obj = Tab.noObj;
+		} else {
+			designatorSimple.obj = designatorObj;
 		}
+		// printObj(designator.obj, designator);
 	}
 
 	@Override
-	public void visit(DesignatorAssignSet designatorAssignSet) {
-		Obj targetDesObj = designatorAssignSet.getDesignator().obj;
-		int targetDesKind = targetDesObj.getKind();
-		Struct targetDesType = targetDesObj.getType();
-		Struct leftDesType = designatorAssignSet.getDesignator1().obj.getType();
-		Struct rightDesType = designatorAssignSet.getDesignator2().obj.getType();
-		if (targetDesKind != Obj.Var && targetDesKind != Obj.Elem) {
-			report_error("designator '" + targetDesObj.getName() + "' is not valid for assignment",
-					designatorAssignSet);
-		} else if (targetDesType != setType || leftDesType != setType || rightDesType != setType) {
-			report_error("operands of set operation must be of type set", designatorAssignSet);
-		}
-	}
-
-	@Override
-	public void visit(Designator designator) {
-		String designatorName = designator.getDesignatorName().getDesignatorName();
+	public void visit(DesignatorArr designatorArr) {
+		String designatorName = designatorArr.getDesignatorArrName().getDesignatorName();
 		Obj designatorObj = Tab.find(designatorName);
 		int designatorKind = designatorObj.getKind();
 		Struct designatorType = designatorObj.getType();
-		if (designatorObj == Tab.noObj) {
-			report_error("designator '" + currDesignatorName + "' must be declared before use", designator);
-			designator.obj = Tab.noObj;
+		if (designatorObj.equals(Tab.noObj)) {
+			report_error("designator '" + designatorName + "' must be declared before use", designatorArr);
+			designatorArr.obj = Tab.noObj;
+		} else if (designatorKind != Obj.Var || designatorType.getKind() != SpecStruct.Array) {
+			report_error("designator '" + designatorName + "' is not valid for this use", designatorArr);
+			designatorArr.obj = Tab.noObj;
+		} else if (designatorArr.getExpr().struct.equals(Tab.noType)) {
+			report_error("array index must be of type int", designatorArr);
+			designatorArr.obj = Tab.noObj;
 		} else {
-			switch (currAccessor) {
-			case ACCESSOR_NONE:
-				if (designatorKind != Obj.Con && designatorKind != Obj.Var && designatorKind != Obj.Meth) {
-					report_error("designator '" + currDesignatorName + "' is not valid for this use", designator);
-					designator.obj = Tab.noObj;
-				} else {
-					designator.obj = designatorObj;
-				}
-				break;
-			case ACCESSOR_ARRAY:
-				if (designatorKind != Obj.Var || designatorType.getKind() != SpecStruct.Array) {
-					report_error("designator '" + currDesignatorName + "' is not valid for this use", designator);
-					designator.obj = Tab.noObj;
-				} else if (designator.getAccessorList().struct.equals(Tab.noType)) {
-					designator.obj = Tab.noObj;
-				} else {
-					designator.obj = new Obj(Obj.Elem, currDesignatorName, designatorType.getElemType());
-				}
-				break;
-			default:
-				report_fatal_error("unexpected designator kind", designator);
-				break;
-			}
+			designatorArr.obj = new Obj(Obj.Elem, designatorName + "[#]", designatorType.getElemType());
 		}
-		printObj(designator.obj, designator);
-		currDesignatorName = "";
-		currAccessor = ACCESSOR_NONE;
+		// printObj(designator.obj, designator);
 	}
 
 	@Override
-	public void visit(DesignatorName designatorName) {
-		currDesignatorName += designatorName.getDesignatorName();
-	}
-
-	@Override
-	public void visit(AccessorListExists accessorList) {
-		Struct accessorType = accessorList.getAccessor().struct;
-		Struct accessorListType = accessorList.getAccessorList().struct;
-		if (accessorType.equals(Tab.noType) || accessorListType.equals(Tab.noType)) {
-			accessorList.struct = Tab.noType;
-		} else {
-			accessorList.struct = accessorType; // Tab.intType
-		}
-	}
-
-	@Override
-	public void visit(AccessorListEpsilon accessorList) {
-		accessorList.struct = Tab.nullType; // not an error
-	}
-
-	@Override
-	public void visit(AccessorArr accessorArr) {
-		currDesignatorName += "[#]";
-		currAccessor = ACCESSOR_ARRAY;
-		if (!accessorArr.getExpr().struct.equals(Tab.intType)) {
-			report_error("array index must be of type int", accessorArr);
-			accessorArr.struct = Tab.noType; // error
-		} else {
-			accessorArr.struct = Tab.intType;
-		}
+	public void visit(DesignatorArrName designatorArrName) {
+		designatorArrName.obj = Tab.find(designatorArrName.getDesignatorName());
 	}
 
 	@Override
@@ -611,26 +610,12 @@ public class MJSemanticAnalyzer extends VisitorAdaptor {
 
 	@Override
 	public void visit(ExprMap exprMap) {
-		Obj leftDesObj = exprMap.getDesignator().obj;
-		Struct rightDesType = exprMap.getDesignator1().obj.getType();
-		try {
-			if (rightDesType.getKind() != SpecStruct.Array || rightDesType.getElemType() != Tab.intType) {
-				throw new Exception("right operand of map operation must be array of type int");
-			}
-			if (leftDesObj.getKind() != Obj.Meth || leftDesObj.getType() != Tab.intType || leftDesObj.getLevel() != 1) {
-				throw new Exception(
-						"left operand of map operation must be function with one formal parameter of type int"
-								+ " and return type of int");
-			}
-			for (Obj local : leftDesObj.getLocalSymbols()) {
-				if (local.getKind() == Obj.Var && local.getFpPos() == 1 && local.getType() != Tab.intType) {
-					throw new Exception("formal parameter of function on left operand must be of type int");
-				}
-			}
-			exprMap.struct = Tab.intType;
-		} catch (Exception e) {
-			report_error(e.getMessage(), exprMap);
+		Struct methodType = exprMap.getExprMapMethodName().struct;
+		Struct arrType = exprMap.getExprMapArrName().struct;
+		if (methodType.equals(Tab.noType) || arrType.equals(Tab.noType)) {
 			exprMap.struct = Tab.noType;
+		} else {
+			exprMap.struct = Tab.intType;
 		}
 	}
 
@@ -771,6 +756,71 @@ public class MJSemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	@Override
+	public void visit(MulopMul mulopMul) {
+		mulopMul.string = mulopMul.getMul();
+	}
+
+	@Override
+	public void visit(MulopDiv mulopDiv) {
+		mulopDiv.string = mulopDiv.getDiv();
+	}
+
+	@Override
+	public void visit(MulopMod mulopMod) {
+		mulopMod.string = mulopMod.getMod();
+	}
+
+	@Override
+	public void visit(AddopPlus addopPlus) {
+		addopPlus.string = addopPlus.getPlus();
+	}
+
+	@Override
+	public void visit(AddopMinus addopMinus) {
+		addopMinus.string = addopMinus.getMinus();
+	}
+	
+	@Override
+	public void visit(SetopUnion setopUnion) {
+		setopUnion.string = setopUnion.getUnion();
+	}
+
+	@Override
+	public void visit(ExprMapMethodName exprMapMethodName) {
+		Obj designatorObj = exprMapMethodName.getDesignator().obj;
+		Struct designatorType = designatorObj.getType();
+		int designatorKind = designatorObj.getKind();
+		int designatorLevel = designatorObj.getLevel();
+		if (designatorKind != Obj.Meth || designatorType != Tab.intType || designatorLevel != 1) {
+			report_error("left operand of map operation must be function with one formal parameter of "
+					+ "type int and return type of int", exprMapMethodName);
+			exprMapMethodName.struct = Tab.noType;
+		} else {
+			for (Obj local : designatorObj.getLocalSymbols()) {
+				if (local.getKind() == Obj.Var && local.getFpPos() == 1 && local.getType() != Tab.intType) {
+					report_error("formal parameter of function on left operand must be of type int", exprMapMethodName);
+					exprMapMethodName.struct = Tab.noType;
+					break;
+				} else {
+					exprMapMethodName.struct = Tab.intType;
+					break;
+				}
+			}
+		}
+	}
+
+	@Override
+	public void visit(ExprMapArrName exprMapArrName) {
+		Struct designatorType = exprMapArrName.getDesignator().obj.getType();
+		if (designatorType.getKind() != SpecStruct.Array || designatorType.getElemType() != Tab.intType) {
+			report_error("right operand of map operation must be array of type int", exprMapArrName);
+			exprMapArrName.struct = Tab.noType;
+		} else {
+			exprMapArrName.struct = Tab.intType;
+		}
+	}
+
+	@Override
 	public void visit(ConditionValid conditionValid) {
 		conditionValid.struct = conditionValid.getCondTermList().struct;
 	}
@@ -877,6 +927,19 @@ public class MJSemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	@Override
+	public void visit(DoWhileBegin doWhileBegin) {
+		currLoopNestingLevel++;
+	}
+
+	@Override
+	public void visit(DoWhileCondExists doWhileCondExists) {
+		Struct condType = doWhileCondExists.getCondition().struct;
+		if (condType != boolType) {
+			report_error("condition in do-while loop must be of type bool", doWhileCondExists);
+		}
+	}
+
+	@Override
 	public void visit(RetValExists retValExists) {
 		if (currMethodRetType == Tab.noType) {
 			report_error("return statement in a void method or global function must not return a value", retValExists);
@@ -890,19 +953,6 @@ public class MJSemanticAnalyzer extends VisitorAdaptor {
 	public void visit(RetValEpsilon retValEpsilon) {
 		if (currMethodRetType != Tab.noType) {
 			report_error("return statement in a non-void method or global function must return a value", retValEpsilon);
-		}
-	}
-
-	@Override
-	public void visit(LoopStart loopStart) {
-		currLoopNestingLevel++;
-	}
-
-	@Override
-	public void visit(LoopCondExists loopCond) {
-		Struct condType = loopCond.getCondition().struct;
-		if (condType != boolType) {
-			report_error("condition in do-while loop must be of type bool", loopCond);
 		}
 	}
 

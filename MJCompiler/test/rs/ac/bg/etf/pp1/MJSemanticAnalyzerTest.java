@@ -39,19 +39,23 @@ public class MJSemanticAnalyzerTest {
 
 			// build AST
 			Symbol token = parser.parse();
-			Program prog = (Program) (token.value);
+			Program program = (Program) (token.value);
 
 			// print AST
-			log.info(prog.toString(""));
+			log.info(program.toString(""));
+			
+			if (parser.isErrorDetected()) {
+				log.error("Parsing was NOT completed successfully.");
+			}
 
 			// semantic analysis
-			MJSemanticAnalyzer semAnalyzer = new MJSemanticAnalyzer();
-			prog.traverseBottomUp(semAnalyzer);
+			MJSemanticAnalyzer semanticAnalyzer = new MJSemanticAnalyzer();
+			program.traverseBottomUp(semanticAnalyzer);
 
 			// print symbol table
 			Tab.dump();
 
-			if (!parser.isErrorDetected() && !semAnalyzer.isErrorDetected()) {
+			if (!semanticAnalyzer.isErrorDetected()) {
 				log.info("Semantic analysis completed successfully.");
 			} else {
 				log.error("Semantic analysis was NOT completed successfully.");

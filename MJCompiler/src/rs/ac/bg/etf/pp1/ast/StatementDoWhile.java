@@ -1,31 +1,31 @@
 // generated with ast extension for cup
 // version 0.8
-// 8/8/2025 21:3:19
+// 26/8/2025 16:11:53
 
 
 package rs.ac.bg.etf.pp1.ast;
 
 public class StatementDoWhile extends Statement {
 
-    private LoopStart LoopStart;
+    private DoWhileBegin DoWhileBegin;
     private Statement Statement;
-    private LoopCond LoopCond;
+    private DoWhileCond DoWhileCond;
 
-    public StatementDoWhile (LoopStart LoopStart, Statement Statement, LoopCond LoopCond) {
-        this.LoopStart=LoopStart;
-        if(LoopStart!=null) LoopStart.setParent(this);
+    public StatementDoWhile (DoWhileBegin DoWhileBegin, Statement Statement, DoWhileCond DoWhileCond) {
+        this.DoWhileBegin=DoWhileBegin;
+        if(DoWhileBegin!=null) DoWhileBegin.setParent(this);
         this.Statement=Statement;
         if(Statement!=null) Statement.setParent(this);
-        this.LoopCond=LoopCond;
-        if(LoopCond!=null) LoopCond.setParent(this);
+        this.DoWhileCond=DoWhileCond;
+        if(DoWhileCond!=null) DoWhileCond.setParent(this);
     }
 
-    public LoopStart getLoopStart() {
-        return LoopStart;
+    public DoWhileBegin getDoWhileBegin() {
+        return DoWhileBegin;
     }
 
-    public void setLoopStart(LoopStart LoopStart) {
-        this.LoopStart=LoopStart;
+    public void setDoWhileBegin(DoWhileBegin DoWhileBegin) {
+        this.DoWhileBegin=DoWhileBegin;
     }
 
     public Statement getStatement() {
@@ -36,12 +36,12 @@ public class StatementDoWhile extends Statement {
         this.Statement=Statement;
     }
 
-    public LoopCond getLoopCond() {
-        return LoopCond;
+    public DoWhileCond getDoWhileCond() {
+        return DoWhileCond;
     }
 
-    public void setLoopCond(LoopCond LoopCond) {
-        this.LoopCond=LoopCond;
+    public void setDoWhileCond(DoWhileCond DoWhileCond) {
+        this.DoWhileCond=DoWhileCond;
     }
 
     public void accept(Visitor visitor) {
@@ -49,22 +49,22 @@ public class StatementDoWhile extends Statement {
     }
 
     public void childrenAccept(Visitor visitor) {
-        if(LoopStart!=null) LoopStart.accept(visitor);
+        if(DoWhileBegin!=null) DoWhileBegin.accept(visitor);
         if(Statement!=null) Statement.accept(visitor);
-        if(LoopCond!=null) LoopCond.accept(visitor);
+        if(DoWhileCond!=null) DoWhileCond.accept(visitor);
     }
 
     public void traverseTopDown(Visitor visitor) {
         accept(visitor);
-        if(LoopStart!=null) LoopStart.traverseTopDown(visitor);
+        if(DoWhileBegin!=null) DoWhileBegin.traverseTopDown(visitor);
         if(Statement!=null) Statement.traverseTopDown(visitor);
-        if(LoopCond!=null) LoopCond.traverseTopDown(visitor);
+        if(DoWhileCond!=null) DoWhileCond.traverseTopDown(visitor);
     }
 
     public void traverseBottomUp(Visitor visitor) {
-        if(LoopStart!=null) LoopStart.traverseBottomUp(visitor);
+        if(DoWhileBegin!=null) DoWhileBegin.traverseBottomUp(visitor);
         if(Statement!=null) Statement.traverseBottomUp(visitor);
-        if(LoopCond!=null) LoopCond.traverseBottomUp(visitor);
+        if(DoWhileCond!=null) DoWhileCond.traverseBottomUp(visitor);
         accept(visitor);
     }
 
@@ -73,8 +73,8 @@ public class StatementDoWhile extends Statement {
         buffer.append(tab);
         buffer.append("StatementDoWhile(\n");
 
-        if(LoopStart!=null)
-            buffer.append(LoopStart.toString("  "+tab));
+        if(DoWhileBegin!=null)
+            buffer.append(DoWhileBegin.toString("  "+tab));
         else
             buffer.append(tab+"  null");
         buffer.append("\n");
@@ -85,8 +85,8 @@ public class StatementDoWhile extends Statement {
             buffer.append(tab+"  null");
         buffer.append("\n");
 
-        if(LoopCond!=null)
-            buffer.append(LoopCond.toString("  "+tab));
+        if(DoWhileCond!=null)
+            buffer.append(DoWhileCond.toString("  "+tab));
         else
             buffer.append(tab+"  null");
         buffer.append("\n");
