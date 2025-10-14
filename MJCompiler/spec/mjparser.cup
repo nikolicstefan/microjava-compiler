@@ -53,8 +53,9 @@ scan with {:
 	return s;
 :}
 
-terminal PROGRAM, LBRACE, RBRACE, CONST, ASSIGN, SEMI, COMMA, LBRACKET, RBRACKET, LPAREN, RPAREN, VOID;
-terminal IF, BREAK, CONTINUE, RETURN, READ, PRINT, WHILE, INC, DEC, MAP, NEW, AND, OR, ELSE, DO;
+terminal PROGRAM, LBRACE, RBRACE, CONST, ASSIGN, SEMI, COMMA, LBRACKET, RBRACKET, CLASS, EXTENDS;
+terminal INTERFACE, LPAREN, RPAREN, VOID, IF, BREAK, CONTINUE, RETURN, READ, PRINT, WHILE, INC, DEC;
+terminal DOT, MAP, NEW, AND, OR, ELSE, DO;
 
 terminal String IDENT, MUL, DIV, MOD, PLUS, MINUS, UNION, EQ, NE, GT, GE, LT, LE;
 terminal Integer NUMBER;
@@ -62,13 +63,19 @@ terminal Character CHAR;
 terminal Boolean BOOL;
 
 nonterminal Program, ProgramName, DeclList, Decl, ConstDecl, ConstInit, Literal, ConstInitList, VarDecl;
-nonterminal Var, ArrDeclBrackets, VarList, MethodDeclList, MethodDecl, MethodSignature, RetType, FormPars;
-nonterminal FormPar, FormParList, VarDeclList, StatementList, Statement, DesignatorStatement;
-nonterminal AssignDesignator, Assignop, ActPars, ActParList, ActPar, ElseBlock, ElseBegin, DoWhileBegin;
-nonterminal DoWhileCond, DoWhileCondBegin, PostIterStmt, RetVal, PrintWidth;
+nonterminal Var, ArrDeclBrackets, VarList, ClassDecl, ExtendsClause, ClassMethodBlock, ClassMethodDeclList;
+nonterminal ConstructorDecl, ConstructorSignature, InterfaceDecl, InterfaceDeclName, InterfaceMethodDeclList;
+nonterminal InterfaceMethodDeclSigEnd, MethodDeclList, MethodDecl, MethodSignature, RetType, FormPars;
+nonterminal FormPar, FormParList, VarDeclList, StatementList, Statement, DesignatorStatement, Assignop;
+nonterminal ActPars, ActParList, ActPar, ElseBlock, ElseBegin, DoWhileBegin, DoWhileCond, DoWhileCondBegin;
+nonterminal PostIterStmt, RetVal, PrintWidth;
 
-nonterminal java.lang.String Mulop, Addop, Setop, Relop;
-nonterminal rs.etf.pp1.symboltable.concepts.Obj MethodRetTypeName, Designator, DesignatorArrName;
+nonterminal java.lang.String AssignDesignator, Mulop, Addop, Setop, Relop;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj ClassDeclName, ConstructorDeclName, MethodRetTypeName;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, DesignatorArrName, DesignatorBaseInstance;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj DesignatorBaseInstanceArr, SelectorList, MemberArrName;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj InstanceMemberArrName, FuncCallMethod, FuncCallInstance;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj ConstructorCall, ConstructorCallType;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Type, AssignValue, Expr, TermList, Term, FactorList;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct SignedFactor, Factor, ExprMapMethodName, ExprMapArrName;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Condition, CondTermList, CondTerm, CondFactList, CondFact;
@@ -77,7 +84,7 @@ precedence left ELSE;
 
 Program ::= (Program) PROGRAM ProgramName DeclList LBRACE MethodDeclList RBRACE;
 
-ProgramName ::= (ProgramName) IDENT:progName;
+ProgramName ::= (ProgramName) IDENT:programName;
 
 DeclList ::= (DeclListExists) Decl DeclList
 			 |
@@ -87,6 +94,10 @@ DeclList ::= (DeclListExists) Decl DeclList
 Decl ::= (DeclConst) ConstDecl
 		 |
 		 (DeclVar) VarDecl
+		 |
+		 (DeclClass) ClassDecl
+		 |
+		 (DeclIface) InterfaceDecl
 		 |
 		 (DeclError) error:e
 		 {: String errorDescription = "invalid global declaration";
@@ -140,6 +151,51 @@ VarList ::= (VarListExists) COMMA Var VarList
 			(VarListEpsilon) /* epsilon */
 			;
 
+ClassDecl ::= (ClassDecl) CLASS ClassDeclName ExtendsClause LBRACE VarDeclList ClassMethodBlock RBRACE;
+
+ClassDeclName ::= (ClassDeclName) IDENT:className;
+
+ExtendsClause ::= (ExtendsClauseExists) EXTENDS Type
+				  |
+				  (ExtendsClauseEpsilon) /* epsilon */
+				  ;
+
+VarDeclList ::= (VarDeclListExists) VarDecl VarDeclList
+				|
+				(VarDeclListEpsilon) /* epsilon */
+				;
+
+ClassMethodBlock ::= (ClassMethodBlockExists) LBRACE ClassMethodDeclList RBRACE
+					 |
+					 (ClassMethodBlockEpsilon) /* epsilon */
+					 ;
+
+ClassMethodDeclList ::= (ClassMethodDeclListMethod) MethodDecl ClassMethodDeclList
+						|
+						(ClassMethodDeclListConstructor) ConstructorDecl ClassMethodDeclList
+						|
+						(ClassMethodDeclListEpsilon) /* epsilon */
+						;
+
+ConstructorDecl ::= (ConstructorDecl) ConstructorSignature VarDeclList LBRACE StatementList RBRACE;
+
+ConstructorSignature ::= (ConstructorSignature) ConstructorDeclName LPAREN FormPars RPAREN;
+
+ConstructorDeclName ::= (ConstructorDeclName) IDENT:constructorName;
+
+InterfaceDecl ::= (InterfaceDecl) INTERFACE InterfaceDeclName LBRACE InterfaceMethodDeclList RBRACE;
+
+InterfaceDeclName ::= (InterfaceDeclName) IDENT:interfaceName;
+
+InterfaceMethodDeclList ::= (InterfaceMethodDeclListDecl) MethodDecl InterfaceMethodDeclList
+							|
+							(InterfaceMethodDeclListSig) MethodSignature InterfaceMethodDeclSigEnd InterfaceMethodDeclList
+							|
+							(InterfaceMethodDeclListEpsilon) /* epsilon */
+							;
+
+InterfaceMethodDeclSigEnd ::= (InterfaceMethodDeclSigEnd) SEMI;
+
 MethodDeclList ::= (MethodDeclListExists) MethodDecl MethodDeclList
 				   |
 				   (MethodDeclListEpsilon) /* epsilon */
@@ -174,11 +230,6 @@ FormParList ::= (FormParListExists) COMMA FormPar FormParList
 				(FormParListEpsilon) /* epsilon */
 				;
 
-VarDeclList ::= (VarDeclListExists) VarDecl VarDeclList
-				|
-				(VarDeclListEpsilon) /* epsilon */
-				;
-
 StatementList ::= (StatementListExists) Statement StatementList
 				  |
 				  (StatementListEpsilon) /* epsilon */
@@ -205,7 +256,7 @@ Statement ::= (StatementDesignator) DesignatorStatement SEMI
 
 DesignatorStatement ::= (DesignatorStatementAssign) AssignDesignator Assignop AssignValue
 						|
-						(DesignatorStatementFuncCall) Designator LPAREN ActPars RPAREN
+						(DesignatorStatementFuncCall) FuncCallMethod LPAREN ActPars RPAREN
 						|
 						(DesignatorStatementInc) Designator INC
 						|
@@ -216,10 +267,31 @@ AssignDesignator ::= (AssignDesignator) Designator;
 
 Designator ::= (DesignatorSimple) IDENT:designatorName
 			   |
-			   (DesignatorArr) DesignatorArrName LBRACKET Expr RBRACKET
+			   (DesignatorArrSelector) DesignatorArrName LBRACKET Expr RBRACKET
+			   |
+			   (DesignatorMemberSelector) DesignatorBaseInstance SelectorList
+			   |
+			   (DesignatorMemberSelectorArr) DesignatorBaseInstanceArr SelectorList
 			   ;
 
-DesignatorArrName ::= (DesignatorArrName) IDENT:designatorName;
+DesignatorArrName ::= (DesignatorArrName) IDENT:designatorArrName;
+
+DesignatorBaseInstance ::= (DesignatorBaseInstance) IDENT:designatorInstanceName;
+
+DesignatorBaseInstanceArr ::= (DesignatorBaseInstanceArr) DesignatorArrName LBRACKET Expr RBRACKET;
+
+SelectorList ::= (SelectorListMember) SelectorList DOT IDENT:memberName
+				 |
+				 (SelectorListMemberArr) SelectorList DOT MemberArrName LBRACKET Expr RBRACKET
+				 |
+				 (SelectorListMemberSimple) DOT IDENT:memberName
+				 |
+				 (SelectorListMemberArrSimple) DOT MemberArrName LBRACKET Expr RBRACKET
+				 ;
+
+MemberArrName ::= (MemberArrName) InstanceMemberArrName;
+
+InstanceMemberArrName ::= (InstanceMemberArrName) IDENT:memberArrName;
 
 Assignop ::= (Assignop) ASSIGN;
 
@@ -257,7 +329,7 @@ SignedFactor ::= (SignedFactorPos) Factor
 
 Factor ::= (FactorDesignator) Designator
 		   |
-		   (FactorFuncCall) Designator LPAREN ActPars RPAREN
+		   (FactorFuncCall) FuncCallMethod LPAREN ActPars RPAREN
 		   |
 		   (FactorNumber) NUMBER
 		   |
@@ -267,8 +339,14 @@ Factor ::= (FactorDesignator) Designator
 		   |
 		   (FactorArrAlloc) NEW Type LBRACKET Expr RBRACKET
 		   |
+		   (FactorInstanceAlloc) NEW ConstructorCall
+		   |
 		   (FactorGrouped) LPAREN Expr RPAREN
 		   ;
+
+FuncCallMethod ::= (FuncCallMethod) Designator FuncCallInstance;
+
+FuncCallInstance ::= (FuncCallInstance) /* epsilon */;
 
 ActPars ::= (ActParsExist) ActPar ActParList
 			|
@@ -281,6 +359,10 @@ ActParList ::= (ActParListComma) COMMA ActPar ActParList
 			   ;
 
 ActPar ::= (ActPar) Expr;
+
+ConstructorCall ::= (ConstructorCall) ConstructorCallType LPAREN ActPars RPAREN;
+
+ConstructorCallType ::= (ConstructorCallType) Type;
 
 Mulop ::= (MulopMul) MUL:mul
 		  |
@@ -349,7 +431,7 @@ DoWhileBegin ::= (DoWhileBegin) DO;
 
 DoWhileCond ::= (DoWhileCondExists) DoWhileCondBegin Condition PostIterStmt
 				|
-				(DoWhileCondEpsilon) /* epsilon */
+				(DoWhileCondEpsilon) DoWhileCondBegin
 				;
 
 DoWhileCondBegin ::= (DoWhileCondBegin) /* epsilon */;

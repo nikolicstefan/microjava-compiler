@@ -375,8 +375,16 @@ public class MJCodeGenerator extends VisitorAdaptor {
 
 	/* Code Generation */
 
+	private int globalVarsCnt;
 	private int mainPc;
+	
+	private Obj currClassObj = null;
 	private Obj currAssignDesignatorObj = null;
+	private Obj currFuncCallMethodObj = null;
+	private Obj currFuncCallInstanceObj = null;
+	private Obj currInstanceAllocClassObj = null;
+	
+	private List<Integer> vtableInitBeginAdrList = new ArrayList<>();
 	private Stack<List<Integer>> breakPatchAdrListStack = new Stack<>();
 	private Stack<List<Integer>> continuePatchAdrListStack = new Stack<>();
 	private List<Integer> condFactFalsePatchAdrList = new ArrayList<>();
@@ -384,11 +392,73 @@ public class MJCodeGenerator extends VisitorAdaptor {
 	private Stack<Integer> conditionFalsePatchAdrStack = new Stack<>();
 	private Stack<Integer> elseBeginTruePatchAdrStack = new Stack<>();
 	private Stack<Integer> doWhileBeginAdrStack = new Stack<>();
+	
+	public MJCodeGenerator(int globalVarsCnt) {
+		this.globalVarsCnt = globalVarsCnt;
+	}
+	
+	public int getGlobalVarsCnt() {
+		return globalVarsCnt;
+	}
 
 	public int getMainPc() {
 		return mainPc;
 	}
-
+	
+	@Override
+	public void visit(ClassDecl classDecl) {
+		vtableInitBeginAdrList.add(Code.pc);
+		Code.put(Code.enter);
+		Code.put(0);
+		Code.put(0);
+		currClassObj.setAdr(globalVarsCnt);
+		for (Obj memberObj: currClassObj.getType().getMembers()) {
+			int memberFpPos = memberObj.getFpPos();
+			if (memberObj.getKind() == Obj.Meth && memberFpPos == 1) {
+				String memberName = memberObj.getName();
+				for (int i = 0; i < memberName.length(); i++) {
+					Code.loadConst(memberName.charAt(i));
+					Code.put(Code.putstatic);
+					Code.put2(globalVarsCnt++);
+				}
+				Code.loadConst(-1);
+				Code.put(Code.putstatic);
+				Code.put2(globalVarsCnt++);
+				Code.loadConst(memberObj.getAdr());
+				Code.put(Code.putstatic);
+				Code.put2(globalVarsCnt++);
+			}
+		}
+		Code.loadConst(-2);
+		Code.put(Code.putstatic);
+		Code.put2(globalVarsCnt++);
+		Code.put(Code.exit);
+		Code.put(Code.return_);
+		currClassObj = null;
+	}
+	
+	@Override
+	public void visit(ClassDeclName classDeclName) {
+		currClassObj = classDeclName.obj;
+	}
+	
+	@Override
+	public void visit(ConstructorDecl constructorDecl) {
+		Code.put(Code.exit);
+		Code.put(Code.return_);
+	}
+	
+	@Override
+	public void visit(ConstructorDeclName constructorDeclName) {
+		Obj constructorObj = constructorDeclName.obj;
+		constructorObj.setAdr(Code.pc);
+		int fpCount = constructorObj.getLevel();
+		int localsCount = constructorObj.getLocalSymbols().size();
+		Code.put(Code.enter);
+		Code.put(fpCount);
+		Code.put(localsCount);
+	}
+	
 	@Override
 	public void visit(MethodDecl methodDecl) {
 		Code.put(Code.exit);
@@ -399,7 +469,8 @@ public class MJCodeGenerator extends VisitorAdaptor {
 	public void visit(MethodRetTypeName methodRetTypeName) {
 		Obj methodObj = methodRetTypeName.obj;
 		methodObj.setAdr(Code.pc);
-		if (methodObj.getName().equals("main")) {
+		boolean isMainMethod = methodObj.getName().equals("main");
+		if (isMainMethod) {
 			mainPc = Code.pc;
 		}
 		int fpCount = methodObj.getLevel();
@@ -407,6 +478,13 @@ public class MJCodeGenerator extends VisitorAdaptor {
 		Code.put(Code.enter);
 		Code.put(fpCount);
 		Code.put(localsCount);
+		if (isMainMethod) {
+			for (int vtableInitBeginAdr: vtableInitBeginAdrList) {
+				int offset = vtableInitBeginAdr - Code.pc;
+				Code.put(Code.call);
+				Code.put2(offset);
+			}
+		}
 	}
 
 	// Do While Statement [BEGIN]
@@ -672,20 +750,37 @@ public class MJCodeGenerator extends VisitorAdaptor {
 
 	@Override
 	public void visit(DesignatorStatementFuncCall designatorStatementFuncCall) {
-		Obj methodObj = designatorStatementFuncCall.getDesignator().obj;
-		int offset = methodObj.getAdr() - Code.pc;
-		Code.put(Code.call);
-		Code.put2(offset);
+		Obj methodObj = currFuncCallMethodObj;
+		if (methodObj.getFpPos() == 0) {
+			int offset = methodObj.getAdr() - Code.pc;
+			Code.put(Code.call);
+			Code.put2(offset);
+		} else {
+			Code.put(Code.getfield);
+			Code.put2(0);
+			Code.put(Code.invokevirtual);
+			String methodName = methodObj.getName();
+			for (int i = 0; i < methodName.length(); i++) {
+				Code.put4(methodName.charAt(i));
+			}
+			Code.put4(-1);
+		}
 		if (!methodObj.getType().equals(Tab.noType)) {
 			Code.put(Code.pop);
 		}
+		// currFuncCallMethodObj = null;
+		// currFuncCallInstanceObj = null;
 	}
 
 	@Override
 	public void visit(DesignatorStatementInc designatorStatementInc) {
 		Obj designatorObj = designatorStatementInc.getDesignator().obj;
-		if (designatorObj.getKind() == Obj.Elem) {
+		int designatorKind = designatorObj.getKind();
+		if (designatorKind == Obj.Elem) {
 			Code.put(Code.dup2);
+		}
+		if (designatorKind == Obj.Fld) {
+			Code.put(Code.dup);
 		}
 		Code.load(designatorObj);
 		Code.loadConst(1);
@@ -696,8 +791,12 @@ public class MJCodeGenerator extends VisitorAdaptor {
 	@Override
 	public void visit(DesignatorStatementDec designatorStatementDec) {
 		Obj designatorObj = designatorStatementDec.getDesignator().obj;
-		if (designatorObj.getKind() == Obj.Elem) {
+		int designatorKind = designatorObj.getKind();
+		if (designatorKind == Obj.Elem) {
 			Code.put(Code.dup2);
+		}
+		if (designatorKind == Obj.Fld) {
+			Code.put(Code.dup);
 		}
 		Code.load(designatorObj);
 		Code.loadConst(1);
@@ -709,10 +808,48 @@ public class MJCodeGenerator extends VisitorAdaptor {
 	public void visit(AssignDesignator assignDesignator) {
 		currAssignDesignatorObj = assignDesignator.getDesignator().obj;
 	}
-
+	
+	@Override
+	public void visit(DesignatorSimple designatorSimple) {
+		if (designatorSimple.obj.getKind() == Obj.Fld) {
+			Code.put(Code.load_n); // this
+		}
+	}
+	
 	@Override
 	public void visit(DesignatorArrName designatorArrName) {
-		Code.load(designatorArrName.obj);
+		Obj designatorArrObj = designatorArrName.obj;
+		if (designatorArrObj.getKind() == Obj.Fld) {
+			Code.put(Code.load_n); // this
+		}
+		Code.load(designatorArrObj);
+	}
+	
+	@Override
+	public void visit(DesignatorBaseInstance designatorBaseInstance) {
+		if (designatorBaseInstance.obj.getKind() == Obj.Fld) {
+			Code.put(Code.load_n); // this
+		}
+	}
+	
+	@Override
+	public void visit(SelectorListMember selectorListMember) {
+		Code.load(selectorListMember.obj);
+	}
+		
+	@Override
+	public void visit(SelectorListMemberSimple selectorListMemberSimple) {
+		Code.load(selectorListMemberSimple.obj);
+	}
+		
+	@Override
+	public void visit(MemberArrName memberArrName) {
+		Code.load(memberArrName.obj);
+	}
+	
+	@Override
+	public void visit(InstanceMemberArrName instanceMemberArrName) {
+		Code.load(instanceMemberArrName.obj);
 	}
 
 	private static void setUnion(Obj dstSetObj, Obj src1SetObj, Obj src2SetObj) {
@@ -1007,10 +1144,23 @@ public class MJCodeGenerator extends VisitorAdaptor {
 
 	@Override
 	public void visit(FactorFuncCall factorFuncCall) {
-		Obj methodObj = factorFuncCall.getDesignator().obj;
-		int offset = methodObj.getAdr() - Code.pc;
-		Code.put(Code.call);
-		Code.put2(offset);
+		Obj methodObj = currFuncCallMethodObj;
+		if (methodObj.getFpPos() == 0) {
+			int offset = methodObj.getAdr() - Code.pc;
+			Code.put(Code.call);
+			Code.put2(offset);
+		} else {
+			Code.put(Code.getfield);
+			Code.put2(0);
+			Code.put(Code.invokevirtual);
+			String methodName = methodObj.getName();
+			for (int i = 0; i < methodName.length(); i++) {
+				Code.put4(methodName.charAt(i));
+			}
+			Code.put4(-1);
+		}
+		// currFuncCallMethodObj = null;
+		// currFuncCallInstanceObj = null;
 	}
 
 	@Override
@@ -1045,6 +1195,62 @@ public class MJCodeGenerator extends VisitorAdaptor {
 		} else {
 			Code.put(1);
 		}
+	}
+	
+	@Override
+	public void visit(FactorInstanceAlloc factorInstanceAlloc) {
+		Code.loadConst(currInstanceAllocClassObj.getAdr());
+		Code.put(Code.putfield);
+		Code.put2(0);
+		currInstanceAllocClassObj = null;
+		currFuncCallMethodObj = null;
+		currFuncCallInstanceObj = null;
+	}
+	
+	@Override
+	public void visit(FuncCallMethod funcCallMethod) {
+		currFuncCallMethodObj = funcCallMethod.obj;
+		int currFuncCallMethodFpPos = currFuncCallMethodObj.getFpPos();
+		if (currFuncCallMethodFpPos == 1 || currFuncCallMethodFpPos == 3) {
+			if (currFuncCallInstanceObj == null) {
+				Code.put(Code.load_n); // this
+			}
+			Code.put(Code.dup);
+		}
+	}
+	
+	@Override
+	public void visit(FuncCallInstance funcCallInstance) {
+		currFuncCallInstanceObj = funcCallInstance.obj;
+	}
+	
+	@Override
+	public void visit(ActPar actPar) {
+		int currFuncCallMethodFpPos = currFuncCallMethodObj.getFpPos();
+		if (currFuncCallMethodFpPos == 1 || currFuncCallMethodFpPos == 3) {
+			Code.put(Code.dup_x1);
+			Code.put(Code.pop);
+		}
+	}
+	
+	@Override
+	public void visit(ConstructorCall constructorCall) {
+		Obj constructorObj = constructorCall.obj;
+		if (constructorObj != Tab.noObj && constructorObj.getAdr() != -1) {
+			int offset = constructorObj.getAdr() - Code.pc;
+			Code.put(Code.call);
+			Code.put2(offset);
+		}
+	}
+	
+	@Override
+	public void visit(ConstructorCallType constructorCallType) {
+		currInstanceAllocClassObj = constructorCallType.obj;
+		int numberOfFields = currInstanceAllocClassObj.getType().getNumberOfFields();
+		int numberOfBytes = numberOfFields * 4;
+		Code.put(Code.new_);
+		Code.put2(numberOfBytes);
+		Code.put(Code.dup);
 	}
 
 	// Condition [BEGIN]

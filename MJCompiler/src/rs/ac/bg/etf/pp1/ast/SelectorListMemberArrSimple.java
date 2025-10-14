@@ -1,28 +1,28 @@
 // generated with ast extension for cup
 // version 0.8
-// 26/8/2025 16:11:53
+// 14/9/2025 12:1:24
 
 
 package rs.ac.bg.etf.pp1.ast;
 
-public class DesignatorArr extends Designator {
+public class SelectorListMemberArrSimple extends SelectorList {
 
-    private DesignatorArrName DesignatorArrName;
+    private MemberArrName MemberArrName;
     private Expr Expr;
 
-    public DesignatorArr (DesignatorArrName DesignatorArrName, Expr Expr) {
-        this.DesignatorArrName=DesignatorArrName;
-        if(DesignatorArrName!=null) DesignatorArrName.setParent(this);
+    public SelectorListMemberArrSimple (MemberArrName MemberArrName, Expr Expr) {
+        this.MemberArrName=MemberArrName;
+        if(MemberArrName!=null) MemberArrName.setParent(this);
         this.Expr=Expr;
         if(Expr!=null) Expr.setParent(this);
     }
 
-    public DesignatorArrName getDesignatorArrName() {
-        return DesignatorArrName;
+    public MemberArrName getMemberArrName() {
+        return MemberArrName;
     }
 
-    public void setDesignatorArrName(DesignatorArrName DesignatorArrName) {
-        this.DesignatorArrName=DesignatorArrName;
+    public void setMemberArrName(MemberArrName MemberArrName) {
+        this.MemberArrName=MemberArrName;
     }
 
     public Expr getExpr() {
@@ -38,18 +38,18 @@ public class DesignatorArr extends Designator {
     }
 
     public void childrenAccept(Visitor visitor) {
-        if(DesignatorArrName!=null) DesignatorArrName.accept(visitor);
+        if(MemberArrName!=null) MemberArrName.accept(visitor);
         if(Expr!=null) Expr.accept(visitor);
     }
 
     public void traverseTopDown(Visitor visitor) {
         accept(visitor);
-        if(DesignatorArrName!=null) DesignatorArrName.traverseTopDown(visitor);
+        if(MemberArrName!=null) MemberArrName.traverseTopDown(visitor);
         if(Expr!=null) Expr.traverseTopDown(visitor);
     }
 
     public void traverseBottomUp(Visitor visitor) {
-        if(DesignatorArrName!=null) DesignatorArrName.traverseBottomUp(visitor);
+        if(MemberArrName!=null) MemberArrName.traverseBottomUp(visitor);
         if(Expr!=null) Expr.traverseBottomUp(visitor);
         accept(visitor);
     }
@@ -57,10 +57,10 @@ public class DesignatorArr extends Designator {
     public String toString(String tab) {
         StringBuffer buffer=new StringBuffer();
         buffer.append(tab);
-        buffer.append("DesignatorArr(\n");
+        buffer.append("SelectorListMemberArrSimple(\n");
 
-        if(DesignatorArrName!=null)
-            buffer.append(DesignatorArrName.toString("  "+tab));
+        if(MemberArrName!=null)
+            buffer.append(MemberArrName.toString("  "+tab));
         else
             buffer.append(tab+"  null");
         buffer.append("\n");
@@ -72,7 +72,7 @@ public class DesignatorArr extends Designator {
         buffer.append("\n");
 
         buffer.append(tab);
-        buffer.append(") [DesignatorArr]");
+        buffer.append(") [SelectorListMemberArrSimple]");
         return buffer.toString();
     }
 }

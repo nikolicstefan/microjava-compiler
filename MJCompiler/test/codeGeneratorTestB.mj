@@ -1,4 +1,4 @@
-program semanticAnalyzerTest
+program codeGeneratorTestB
 	int x, y, z;
 	char c1, c2;
 	bool flag;

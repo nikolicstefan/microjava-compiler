@@ -1,0 +1,44 @@
+program codeGeneratorTestB
+	class Union
+	{
+		set a;
+		set b;
+		set c;
+		
+		{		
+			void add(int a[], int b[])
+			{
+				addAll(this.a, a);
+				addAll(this.b, b);
+				c = this.a union this.b;
+			}
+			
+			void printSets()
+			{
+				print(a); print(eol);
+				print(b); print(eol);
+				print(c); print(eol);
+			}
+		}
+	}
+	
+	int a[], b[], i;
+	Union u;
+{
+	void main()
+	{
+		a = new int[5];
+		b = new int[5];
+		
+		i = 0;
+		do {
+			a[i] = i;
+			b[i] = i + 2;
+			i++;
+		} while (i < 5);
+		
+		u = new Union();
+		u.add(a, b);
+		u.printSets();
+	}
+}

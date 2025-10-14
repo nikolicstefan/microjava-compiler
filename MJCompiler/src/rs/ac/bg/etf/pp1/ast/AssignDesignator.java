@@ -1,6 +1,6 @@
 // generated with ast extension for cup
 // version 0.8
-// 26/8/2025 16:11:53
+// 14/9/2025 12:1:24
 
 
 package rs.ac.bg.etf.pp1.ast;
@@ -9,6 +9,8 @@ public class AssignDesignator implements SyntaxNode {
 
     private SyntaxNode parent;
     private int line;
+    public java.lang.String string = null;
+
     private Designator Designator;
 
     public AssignDesignator (Designator Designator) {

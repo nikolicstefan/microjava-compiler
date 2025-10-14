@@ -53,8 +53,9 @@ scan with {:
 	return s;
 :}
 
-terminal PROGRAM, LBRACE, RBRACE, CONST, ASSIGN, SEMI, COMMA, LBRACKET, RBRACKET, LPAREN, RPAREN, VOID;
-terminal IF, BREAK, CONTINUE, RETURN, READ, PRINT, WHILE, INC, DEC, MAP, NEW, AND, OR, ELSE, DO;
+terminal PROGRAM, LBRACE, RBRACE, CONST, ASSIGN, SEMI, COMMA, LBRACKET, RBRACKET, CLASS, EXTENDS;
+terminal INTERFACE, LPAREN, RPAREN, VOID, IF, BREAK, CONTINUE, RETURN, READ, PRINT, WHILE, INC, DEC;
+terminal DOT, MAP, NEW, AND, OR, ELSE, DO;
 
 terminal String IDENT, MUL, DIV, MOD, PLUS, MINUS, UNION, EQ, NE, GT, GE, LT, LE;
 terminal Integer NUMBER;
@@ -73,6 +74,16 @@ nonterminal VarDecl VarDecl;
 nonterminal Var Var;
 nonterminal ArrDeclBrackets ArrDeclBrackets;
 nonterminal VarList VarList;
+nonterminal ClassDecl ClassDecl;
+nonterminal ExtendsClause ExtendsClause;
+nonterminal ClassMethodBlock ClassMethodBlock;
+nonterminal ClassMethodDeclList ClassMethodDeclList;
+nonterminal ConstructorDecl ConstructorDecl;
+nonterminal ConstructorSignature ConstructorSignature;
+nonterminal InterfaceDecl InterfaceDecl;
+nonterminal InterfaceDeclName InterfaceDeclName;
+nonterminal InterfaceMethodDeclList InterfaceMethodDeclList;
+nonterminal InterfaceMethodDeclSigEnd InterfaceMethodDeclSigEnd;
 nonterminal MethodDeclList MethodDeclList;
 nonterminal MethodDecl MethodDecl;
 nonterminal MethodSignature MethodSignature;
@@ -84,7 +95,6 @@ nonterminal VarDeclList VarDeclList;
 nonterminal StatementList StatementList;
 nonterminal Statement Statement;
 nonterminal DesignatorStatement DesignatorStatement;
-nonterminal AssignDesignator AssignDesignator;
 nonterminal Assignop Assignop;
 nonterminal ActPars ActPars;
 nonterminal ActParList ActParList;
@@ -98,8 +108,12 @@ nonterminal PostIterStmt PostIterStmt;
 nonterminal RetVal RetVal;
 nonterminal PrintWidth PrintWidth;
 
-nonterminal java.lang.String Mulop, Addop, Setop, Relop;
-nonterminal rs.etf.pp1.symboltable.concepts.Obj MethodRetTypeName, Designator, DesignatorArrName;
+nonterminal java.lang.String AssignDesignator, Mulop, Addop, Setop, Relop;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj ClassDeclName, ConstructorDeclName, MethodRetTypeName;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, DesignatorArrName, DesignatorBaseInstance;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj DesignatorBaseInstanceArr, SelectorList, MemberArrName;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj InstanceMemberArrName, FuncCallMethod, FuncCallInstance;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj ConstructorCall, ConstructorCallType;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Type, AssignValue, Expr, TermList, Term, FactorList;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct SignedFactor, Factor, ExprMapMethodName, ExprMapArrName;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Condition, CondTermList, CondTerm, CondFactList, CondFact;
@@ -108,7 +122,7 @@ precedence left ELSE;
 
 Program ::= (Program) PROGRAM ProgramName:P1 DeclList:D2 LBRACE MethodDeclList:M3 RBRACE {: RESULT=new Program(P1, D2, M3); RESULT.setLine(P1left); :};
 
-ProgramName ::= (ProgramName) IDENT:progName {: RESULT=new ProgramName(progName); RESULT.setLine(progNameleft); :};
+ProgramName ::= (ProgramName) IDENT:programName {: RESULT=new ProgramName(programName); RESULT.setLine(programNameleft); :};
 
 DeclList ::= (DeclListExists) Decl:D1 DeclList:D2 {: RESULT=new DeclListExists(D1, D2); RESULT.setLine(D1left); :}
 			 |
@@ -118,6 +132,10 @@ DeclList ::= (DeclListExists) Decl:D1 DeclList:D2 {: RESULT=new DeclListExists(D
 Decl ::= (DeclConst) ConstDecl:C1 {: RESULT=new DeclConst(C1); RESULT.setLine(C1left); :}
 		 |
 		 (DeclVar) VarDecl:V1 {: RESULT=new DeclVar(V1); RESULT.setLine(V1left); :}
+		 |
+		 (DeclClass) ClassDecl:C1 {: RESULT=new DeclClass(C1); RESULT.setLine(C1left); :}
+		 |
+		 (DeclIface) InterfaceDecl:I1 {: RESULT=new DeclIface(I1); RESULT.setLine(I1left); :}
 		 |
 		 (DeclError) error:e
 		 {: String errorDescription = "invalid global declaration";
@@ -171,6 +189,51 @@ VarList ::= (VarListExists) COMMA Var:V1 VarList:V2 {: RESULT=new VarListExists(
 			(VarListEpsilon) {: RESULT=new VarListEpsilon(); :} /* epsilon */
 			;
 
+ClassDecl ::= (ClassDecl) CLASS ClassDeclName:C1 ExtendsClause:E2 LBRACE VarDeclList:V3 ClassMethodBlock:C4 RBRACE {: RESULT=new ClassDecl(C1, E2, V3, C4); RESULT.setLine(C1left); :};
+
+ClassDeclName ::= (ClassDeclName) IDENT:className {: RESULT=new ClassDeclName(className); RESULT.setLine(classNameleft); :};
+
+ExtendsClause ::= (ExtendsClauseExists) EXTENDS Type:T1 {: RESULT=new ExtendsClauseExists(T1); RESULT.setLine(T1left); :}
+				  |
+				  (ExtendsClauseEpsilon) {: RESULT=new ExtendsClauseEpsilon(); :} /* epsilon */
+				  ;
+
+VarDeclList ::= (VarDeclListExists) VarDecl:V1 VarDeclList:V2 {: RESULT=new VarDeclListExists(V1, V2); RESULT.setLine(V1left); :}
+				|
+				(VarDeclListEpsilon) {: RESULT=new VarDeclListEpsilon(); :} /* epsilon */
+				;
+
+ClassMethodBlock ::= (ClassMethodBlockExists) LBRACE ClassMethodDeclList:C1 RBRACE {: RESULT=new ClassMethodBlockExists(C1); RESULT.setLine(C1left); :}
+					 |
+					 (ClassMethodBlockEpsilon) {: RESULT=new ClassMethodBlockEpsilon(); :} /* epsilon */
+					 ;
+
+ClassMethodDeclList ::= (ClassMethodDeclListMethod) MethodDecl:M1 ClassMethodDeclList:C2 {: RESULT=new ClassMethodDeclListMethod(M1, C2); RESULT.setLine(M1left); :}
+						|
+						(ClassMethodDeclListConstructor) ConstructorDecl:C1 ClassMethodDeclList:C2 {: RESULT=new ClassMethodDeclListConstructor(C1, C2); RESULT.setLine(C1left); :}
+						|
+						(ClassMethodDeclListEpsilon) {: RESULT=new ClassMethodDeclListEpsilon(); :} /* epsilon */
+						;
+
+ConstructorDecl ::= (ConstructorDecl) ConstructorSignature:C1 VarDeclList:V2 LBRACE StatementList:S3 RBRACE {: RESULT=new ConstructorDecl(C1, V2, S3); RESULT.setLine(C1left); :};
+
+ConstructorSignature ::= (ConstructorSignature) ConstructorDeclName:C1 LPAREN FormPars:F2 RPAREN {: RESULT=new ConstructorSignature(C1, F2); RESULT.setLine(C1left); :};
+
+ConstructorDeclName ::= (ConstructorDeclName) IDENT:constructorName {: RESULT=new ConstructorDeclName(constructorName); RESULT.setLine(constructorNameleft); :};
+
+InterfaceDecl ::= (InterfaceDecl) INTERFACE InterfaceDeclName:I1 LBRACE InterfaceMethodDeclList:I2 RBRACE {: RESULT=new InterfaceDecl(I1, I2); RESULT.setLine(I1left); :};
+
+InterfaceDeclName ::= (InterfaceDeclName) IDENT:interfaceName {: RESULT=new InterfaceDeclName(interfaceName); RESULT.setLine(interfaceNameleft); :};
+
+InterfaceMethodDeclList ::= (InterfaceMethodDeclListDecl) MethodDecl:M1 InterfaceMethodDeclList:I2 {: RESULT=new InterfaceMethodDeclListDecl(M1, I2); RESULT.setLine(M1left); :}
+							|
+							(InterfaceMethodDeclListSig) MethodSignature:M1 InterfaceMethodDeclSigEnd:I2 InterfaceMethodDeclList:I3 {: RESULT=new InterfaceMethodDeclListSig(M1, I2, I3); RESULT.setLine(M1left); :}
+							|
+							(InterfaceMethodDeclListEpsilon) {: RESULT=new InterfaceMethodDeclListEpsilon(); :} /* epsilon */
+							;
+
+InterfaceMethodDeclSigEnd ::= (InterfaceMethodDeclSigEnd) SEMI {: RESULT=new InterfaceMethodDeclSigEnd(); :};
+
 MethodDeclList ::= (MethodDeclListExists) MethodDecl:M1 MethodDeclList:M2 {: RESULT=new MethodDeclListExists(M1, M2); RESULT.setLine(M1left); :}
 				   |
 				   (MethodDeclListEpsilon) {: RESULT=new MethodDeclListEpsilon(); :} /* epsilon */
@@ -205,11 +268,6 @@ FormParList ::= (FormParListExists) COMMA FormPar:F1 FormParList:F2 {: RESULT=ne
 				(FormParListEpsilon) {: RESULT=new FormParListEpsilon(); :} /* epsilon */
 				;
 
-VarDeclList ::= (VarDeclListExists) VarDecl:V1 VarDeclList:V2 {: RESULT=new VarDeclListExists(V1, V2); RESULT.setLine(V1left); :}
-				|
-				(VarDeclListEpsilon) {: RESULT=new VarDeclListEpsilon(); :} /* epsilon */
-				;
-
 StatementList ::= (StatementListExists) Statement:S1 StatementList:S2 {: RESULT=new StatementListExists(S1, S2); RESULT.setLine(S1left); :}
 				  |
 				  (StatementListEpsilon) {: RESULT=new StatementListEpsilon(); :} /* epsilon */
@@ -236,7 +294,7 @@ Statement ::= (StatementDesignator) DesignatorStatement:D1 SEMI {: RESULT=new St
 
 DesignatorStatement ::= (DesignatorStatementAssign) AssignDesignator:A1 Assignop:A2 AssignValue:A3 {: RESULT=new DesignatorStatementAssign(A1, A2, A3); RESULT.setLine(A1left); :}
 						|
-						(DesignatorStatementFuncCall) Designator:D1 LPAREN ActPars:A2 RPAREN {: RESULT=new DesignatorStatementFuncCall(D1, A2); RESULT.setLine(D1left); :}
+						(DesignatorStatementFuncCall) FuncCallMethod:F1 LPAREN ActPars:A2 RPAREN {: RESULT=new DesignatorStatementFuncCall(F1, A2); RESULT.setLine(F1left); :}
 						|
 						(DesignatorStatementInc) Designator:D1 INC {: RESULT=new DesignatorStatementInc(D1); RESULT.setLine(D1left); :}
 						|
@@ -247,10 +305,31 @@ AssignDesignator ::= (AssignDesignator) Designator:D1 {: RESULT=new AssignDesign
 
 Designator ::= (DesignatorSimple) IDENT:designatorName {: RESULT=new DesignatorSimple(designatorName); RESULT.setLine(designatorNameleft); :}
 			   |
-			   (DesignatorArr) DesignatorArrName:D1 LBRACKET Expr:E2 RBRACKET {: RESULT=new DesignatorArr(D1, E2); RESULT.setLine(D1left); :}
+			   (DesignatorArrSelector) DesignatorArrName:D1 LBRACKET Expr:E2 RBRACKET {: RESULT=new DesignatorArrSelector(D1, E2); RESULT.setLine(D1left); :}
+			   |
+			   (DesignatorMemberSelector) DesignatorBaseInstance:D1 SelectorList:S2 {: RESULT=new DesignatorMemberSelector(D1, S2); RESULT.setLine(D1left); :}
+			   |
+			   (DesignatorMemberSelectorArr) DesignatorBaseInstanceArr:D1 SelectorList:S2 {: RESULT=new DesignatorMemberSelectorArr(D1, S2); RESULT.setLine(D1left); :}
 			   ;
 
-DesignatorArrName ::= (DesignatorArrName) IDENT:designatorName {: RESULT=new DesignatorArrName(designatorName); RESULT.setLine(designatorNameleft); :};
+DesignatorArrName ::= (DesignatorArrName) IDENT:designatorArrName {: RESULT=new DesignatorArrName(designatorArrName); RESULT.setLine(designatorArrNameleft); :};
+
+DesignatorBaseInstance ::= (DesignatorBaseInstance) IDENT:designatorInstanceName {: RESULT=new DesignatorBaseInstance(designatorInstanceName); RESULT.setLine(designatorInstanceNameleft); :};
+
+DesignatorBaseInstanceArr ::= (DesignatorBaseInstanceArr) DesignatorArrName:D1 LBRACKET Expr:E2 RBRACKET {: RESULT=new DesignatorBaseInstanceArr(D1, E2); RESULT.setLine(D1left); :};
+
+SelectorList ::= (SelectorListMember) SelectorList:S1 DOT IDENT:memberName {: RESULT=new SelectorListMember(S1, memberName); RESULT.setLine(S1left); :}
+				 |
+				 (SelectorListMemberArr) SelectorList:S1 DOT MemberArrName:M2 LBRACKET Expr:E3 RBRACKET {: RESULT=new SelectorListMemberArr(S1, M2, E3); RESULT.setLine(S1left); :}
+				 |
+				 (SelectorListMemberSimple) DOT IDENT:memberName {: RESULT=new SelectorListMemberSimple(memberName); RESULT.setLine(memberNameleft); :}
+				 |
+				 (SelectorListMemberArrSimple) DOT MemberArrName:M1 LBRACKET Expr:E2 RBRACKET {: RESULT=new SelectorListMemberArrSimple(M1, E2); RESULT.setLine(M1left); :}
+				 ;
+
+MemberArrName ::= (MemberArrName) InstanceMemberArrName:I1 {: RESULT=new MemberArrName(I1); RESULT.setLine(I1left); :};
+
+InstanceMemberArrName ::= (InstanceMemberArrName) IDENT:memberArrName {: RESULT=new InstanceMemberArrName(memberArrName); RESULT.setLine(memberArrNameleft); :};
 
 Assignop ::= (Assignop) ASSIGN {: RESULT=new Assignop(); :};
 
@@ -288,7 +367,7 @@ SignedFactor ::= (SignedFactorPos) Factor:F1 {: RESULT=new SignedFactorPos(F1); 
 
 Factor ::= (FactorDesignator) Designator:D1 {: RESULT=new FactorDesignator(D1); RESULT.setLine(D1left); :}
 		   |
-		   (FactorFuncCall) Designator:D1 LPAREN ActPars:A2 RPAREN {: RESULT=new FactorFuncCall(D1, A2); RESULT.setLine(D1left); :}
+		   (FactorFuncCall) FuncCallMethod:F1 LPAREN ActPars:A2 RPAREN {: RESULT=new FactorFuncCall(F1, A2); RESULT.setLine(F1left); :}
 		   |
 		   (FactorNumber) NUMBER:N1 {: RESULT=new FactorNumber(N1); RESULT.setLine(N1left); :}
 		   |
@@ -298,8 +377,14 @@ Factor ::= (FactorDesignator) Designator:D1 {: RESULT=new FactorDesignator(D1); 
 		   |
 		   (FactorArrAlloc) NEW Type:T1 LBRACKET Expr:E2 RBRACKET {: RESULT=new FactorArrAlloc(T1, E2); RESULT.setLine(T1left); :}
 		   |
+		   (FactorInstanceAlloc) NEW ConstructorCall:C1 {: RESULT=new FactorInstanceAlloc(C1); RESULT.setLine(C1left); :}
+		   |
 		   (FactorGrouped) LPAREN Expr:E1 RPAREN {: RESULT=new FactorGrouped(E1); RESULT.setLine(E1left); :}
 		   ;
+
+FuncCallMethod ::= (FuncCallMethod) Designator:D1 FuncCallInstance:F2 {: RESULT=new FuncCallMethod(D1, F2); RESULT.setLine(D1left); :};
+
+FuncCallInstance ::= (FuncCallInstance) {: RESULT=new FuncCallInstance(); :} /* epsilon */;
 
 ActPars ::= (ActParsExist) ActPar:A1 ActParList:A2 {: RESULT=new ActParsExist(A1, A2); RESULT.setLine(A1left); :}
 			|
@@ -312,6 +397,10 @@ ActParList ::= (ActParListComma) COMMA ActPar:A1 ActParList:A2 {: RESULT=new Act
 			   ;
 
 ActPar ::= (ActPar) Expr:E1 {: RESULT=new ActPar(E1); RESULT.setLine(E1left); :};
+
+ConstructorCall ::= (ConstructorCall) ConstructorCallType:C1 LPAREN ActPars:A2 RPAREN {: RESULT=new ConstructorCall(C1, A2); RESULT.setLine(C1left); :};
+
+ConstructorCallType ::= (ConstructorCallType) Type:T1 {: RESULT=new ConstructorCallType(T1); RESULT.setLine(T1left); :};
 
 Mulop ::= (MulopMul) MUL:mul {: RESULT=new MulopMul(mul); RESULT.setLine(mulleft); :}
 		  |
@@ -380,7 +469,7 @@ DoWhileBegin ::= (DoWhileBegin) DO {: RESULT=new DoWhileBegin(); :};
 
 DoWhileCond ::= (DoWhileCondExists) DoWhileCondBegin:D1 Condition:C2 PostIterStmt:P3 {: RESULT=new DoWhileCondExists(D1, C2, P3); RESULT.setLine(D1left); :}
 				|
-				(DoWhileCondEpsilon) {: RESULT=new DoWhileCondEpsilon(); :} /* epsilon */
+				(DoWhileCondEpsilon) DoWhileCondBegin:D1 {: RESULT=new DoWhileCondEpsilon(D1); RESULT.setLine(D1left); :}
 				;
 
 DoWhileCondBegin ::= (DoWhileCondBegin) {: RESULT=new DoWhileCondBegin(); :} /* epsilon */;

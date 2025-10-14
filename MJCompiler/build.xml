@@ -64,6 +64,7 @@
 	</target>
 
 	<target name="debugObj" depends="disasm">
+		<!-- <java classname="rs.etf.pp1.mj.runtime.Run" input="${basedir}/test/input.txt" output="${basedir}/test/output.txt" error="${basedir}/test/error.txt"> -->
 		<java classname="rs.etf.pp1.mj.runtime.Run" input="${basedir}/test/input.txt">
 			<arg value="${basedir}/test/program.obj" />
 			<arg value="-debug" />
@@ -74,6 +75,7 @@
 	</target>
 
 	<target name="runObj" depends="debugObj">
+		<!-- <java classname="rs.etf.pp1.mj.runtime.Run" input="${basedir}/test/input.txt" output="${basedir}/test/output.txt" error="${basedir}/test/error.txt"> -->
 		<java classname="rs.etf.pp1.mj.runtime.Run" input="${basedir}/test/input.txt">
 			<arg value="${basedir}/test/program.obj" />
 			<classpath>

@@ -69,11 +69,11 @@ public class MJCodeGeneratorTest {
 			}
 
 			// generate code
-			MJCodeGenerator codeGenerator = new MJCodeGenerator();
+			MJCodeGenerator codeGenerator = new MJCodeGenerator(semanticAnalyzer.getGlobalVarsCnt());
 			program.traverseBottomUp(codeGenerator);
 
 			// generate new object file
-			Code.dataSize = semanticAnalyzer.getNVars();
+			Code.dataSize = codeGenerator.getGlobalVarsCnt();
 			Code.mainPc = codeGenerator.getMainPc();
 			Code.write(new FileOutputStream(objFile));
 
