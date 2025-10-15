@@ -1,29 +1,27 @@
 // generated with ast extension for cup
 // version 0.8
-// 14/9/2025 14:36:6
+// 14/9/2025 14:36:5
 
 
 package rs.ac.bg.etf.pp1.ast;
 
-public class CondTerm implements SyntaxNode {
+public class AssignValueSetSrc implements SyntaxNode {
 
     private SyntaxNode parent;
     private int line;
-    public rs.etf.pp1.symboltable.concepts.Struct struct = null;
+    private Designator Designator;
 
-    private CondFactList CondFactList;
-
-    public CondTerm (CondFactList CondFactList) {
-        this.CondFactList=CondFactList;
-        if(CondFactList!=null) CondFactList.setParent(this);
+    public AssignValueSetSrc (Designator Designator) {
+        this.Designator=Designator;
+        if(Designator!=null) Designator.setParent(this);
     }
 
-    public CondFactList getCondFactList() {
-        return CondFactList;
+    public Designator getDesignator() {
+        return Designator;
     }
 
-    public void setCondFactList(CondFactList CondFactList) {
-        this.CondFactList=CondFactList;
+    public void setDesignator(Designator Designator) {
+        this.Designator=Designator;
     }
 
     public SyntaxNode getParent() {
@@ -47,32 +45,32 @@ public class CondTerm implements SyntaxNode {
     }
 
     public void childrenAccept(Visitor visitor) {
-        if(CondFactList!=null) CondFactList.accept(visitor);
+        if(Designator!=null) Designator.accept(visitor);
     }
 
     public void traverseTopDown(Visitor visitor) {
         accept(visitor);
-        if(CondFactList!=null) CondFactList.traverseTopDown(visitor);
+        if(Designator!=null) Designator.traverseTopDown(visitor);
     }
 
     public void traverseBottomUp(Visitor visitor) {
-        if(CondFactList!=null) CondFactList.traverseBottomUp(visitor);
+        if(Designator!=null) Designator.traverseBottomUp(visitor);
         accept(visitor);
     }
 
     public String toString(String tab) {
         StringBuffer buffer=new StringBuffer();
         buffer.append(tab);
-        buffer.append("CondTerm(\n");
+        buffer.append("AssignValueSetSrc(\n");
 
-        if(CondFactList!=null)
-            buffer.append(CondFactList.toString("  "+tab));
+        if(Designator!=null)
+            buffer.append(Designator.toString("  "+tab));
         else
             buffer.append(tab+"  null");
         buffer.append("\n");
 
         buffer.append(tab);
-        buffer.append(") [CondTerm]");
+        buffer.append(") [AssignValueSetSrc]");
         return buffer.toString();
     }
 }

@@ -96,6 +96,7 @@ nonterminal StatementList StatementList;
 nonterminal Statement Statement;
 nonterminal DesignatorStatement DesignatorStatement;
 nonterminal Assignop Assignop;
+nonterminal AssignValueSetSrc AssignValueSetSrc;
 nonterminal ActPars ActPars;
 nonterminal ActParList ActParList;
 nonterminal ActPar ActPar;
@@ -335,13 +336,15 @@ Assignop ::= (Assignop) ASSIGN {: RESULT=new Assignop(); :};
 
 AssignValue ::= (AssignValueExpr) Expr:E1 {: RESULT=new AssignValueExpr(E1); RESULT.setLine(E1left); :}
 				|
-				(AssignValueSet) Designator:D1 Setop:S2 Designator:D3 {: RESULT=new AssignValueSet(D1, S2, D3); RESULT.setLine(D1left); :}
+				(AssignValueSet) AssignValueSetSrc:A1 Setop:S2 AssignValueSetSrc:A3 {: RESULT=new AssignValueSet(A1, S2, A3); RESULT.setLine(A1left); :}
 				|
 				(AssignValueError) error:e
 				{: String errorDescription = "invalid assignment statement construction";
 				String msg = "Syntax error at line " + eleft + ": " + errorDescription + ". Syntax error recovery";
 				parser.report_error(msg, null); :} {: RESULT=new AssignValueError(); :}
 				;
+
+AssignValueSetSrc ::= (AssignValueSetSrc) Designator:D1 {: RESULT=new AssignValueSetSrc(D1); RESULT.setLine(D1left); :};
 
 Expr ::= (ExprArithm) TermList:T1 {: RESULT=new ExprArithm(T1); RESULT.setLine(T1left); :}
 		 |

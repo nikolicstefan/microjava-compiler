@@ -748,12 +748,24 @@ public class MJSemanticAnalyzer extends VisitorAdaptor {
 		if (assignDesignatorKind != Obj.Var && assignDesignatorKind != Obj.Elem && assignDesignatorKind != Obj.Fld) {
 			report_error("designator '" + assignDesignatorName + "' is not valid for assignment",
 					designatorStatementAssign);
-		} else if (!assignValueType.assignableTo(assignDesignatorType)
-				&& (assignValueType.getKind() != Struct.Class || assignValueType.getElemType() == null
-						|| !assignValueType.getElemType().assignableTo(assignDesignatorType))
-				&& (assignValueType != Tab.nullType || assignDesignatorType.getKind() != Set)) {
-			report_error("assign value cannot be assigned to designator '" + assignDesignatorName + "'",
-					designatorStatementAssign);
+		} else {
+			boolean isClassAssignableTo = true;
+			if (assignValueType.getKind() == Struct.Class && !assignValueType.assignableTo(assignDesignatorType)) {
+				isClassAssignableTo = false;
+				Struct currSuperclass = assignValueType.getElemType();
+				while (currSuperclass != null) {
+					if (currSuperclass.assignableTo(assignDesignatorType)) {
+						isClassAssignableTo = true;
+						break;
+					}
+					currSuperclass = currSuperclass.getElemType();
+				}
+			}
+			if (!assignValueType.assignableTo(assignDesignatorType) && !isClassAssignableTo
+					&& (assignValueType != Tab.nullType || assignDesignatorType.getKind() != Set)) {
+				report_error("assign value cannot be assigned to designator '" + assignDesignatorName + "'",
+						designatorStatementAssign);
+			}
 		}
 	}
 
@@ -1120,7 +1132,7 @@ public class MJSemanticAnalyzer extends VisitorAdaptor {
 		prevMemberObjStack.push(currMemberObj);
 		memberArrName.obj = currMemberObj;
 	}
-	
+
 	@Override
 	public void visit(InstanceMemberArrName instanceMemberArrName) {
 		if (currMemberObj != null) {
@@ -1136,8 +1148,8 @@ public class MJSemanticAnalyzer extends VisitorAdaptor {
 
 	@Override
 	public void visit(AssignValueSet assignValueSet) {
-		Struct leftDesignatorType = assignValueSet.getDesignator().obj.getType();
-		Struct rightDesignatorType = assignValueSet.getDesignator1().obj.getType();
+		Struct leftDesignatorType = assignValueSet.getAssignValueSetSrc().getDesignator().obj.getType();
+		Struct rightDesignatorType = assignValueSet.getAssignValueSetSrc1().getDesignator().obj.getType();
 		if (leftDesignatorType != setType || rightDesignatorType != setType) {
 			report_error("operands of set operation must be of type set", assignValueSet);
 			assignValueSet.struct = Tab.noType;

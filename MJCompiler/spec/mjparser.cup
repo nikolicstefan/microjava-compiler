@@ -67,8 +67,8 @@ nonterminal Var, ArrDeclBrackets, VarList, ClassDecl, ExtendsClause, ClassMethod
 nonterminal ConstructorDecl, ConstructorSignature, InterfaceDecl, InterfaceDeclName, InterfaceMethodDeclList;
 nonterminal InterfaceMethodDeclSigEnd, MethodDeclList, MethodDecl, MethodSignature, RetType, FormPars;
 nonterminal FormPar, FormParList, VarDeclList, StatementList, Statement, DesignatorStatement, Assignop;
-nonterminal ActPars, ActParList, ActPar, ElseBlock, ElseBegin, DoWhileBegin, DoWhileCond, DoWhileCondBegin;
-nonterminal PostIterStmt, RetVal, PrintWidth;
+nonterminal AssignValueSetSrc, ActPars, ActParList, ActPar, ElseBlock, ElseBegin, DoWhileBegin, DoWhileCond;
+nonterminal DoWhileCondBegin, PostIterStmt, RetVal, PrintWidth;
 
 nonterminal java.lang.String AssignDesignator, Mulop, Addop, Setop, Relop;
 nonterminal rs.etf.pp1.symboltable.concepts.Obj ClassDeclName, ConstructorDeclName, MethodRetTypeName;
@@ -297,13 +297,15 @@ Assignop ::= (Assignop) ASSIGN;
 
 AssignValue ::= (AssignValueExpr) Expr
 				|
-				(AssignValueSet) Designator Setop Designator
+				(AssignValueSet) AssignValueSetSrc Setop AssignValueSetSrc
 				|
 				(AssignValueError) error:e
 				{: String errorDescription = "invalid assignment statement construction";
 				String msg = "Syntax error at line " + eleft + ": " + errorDescription + ". Syntax error recovery";
 				parser.report_error(msg, null); :}
 				;
+
+AssignValueSetSrc ::= (AssignValueSetSrc) Designator;
 
 Expr ::= (ExprArithm) TermList
 		 |

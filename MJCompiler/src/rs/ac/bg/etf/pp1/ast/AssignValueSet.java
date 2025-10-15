@@ -1,31 +1,31 @@
 // generated with ast extension for cup
 // version 0.8
-// 14/9/2025 12:1:24
+// 14/9/2025 14:36:5
 
 
 package rs.ac.bg.etf.pp1.ast;
 
 public class AssignValueSet extends AssignValue {
 
-    private Designator Designator;
+    private AssignValueSetSrc AssignValueSetSrc;
     private Setop Setop;
-    private Designator Designator1;
+    private AssignValueSetSrc AssignValueSetSrc1;
 
-    public AssignValueSet (Designator Designator, Setop Setop, Designator Designator1) {
-        this.Designator=Designator;
-        if(Designator!=null) Designator.setParent(this);
+    public AssignValueSet (AssignValueSetSrc AssignValueSetSrc, Setop Setop, AssignValueSetSrc AssignValueSetSrc1) {
+        this.AssignValueSetSrc=AssignValueSetSrc;
+        if(AssignValueSetSrc!=null) AssignValueSetSrc.setParent(this);
         this.Setop=Setop;
         if(Setop!=null) Setop.setParent(this);
-        this.Designator1=Designator1;
-        if(Designator1!=null) Designator1.setParent(this);
+        this.AssignValueSetSrc1=AssignValueSetSrc1;
+        if(AssignValueSetSrc1!=null) AssignValueSetSrc1.setParent(this);
     }
 
-    public Designator getDesignator() {
-        return Designator;
+    public AssignValueSetSrc getAssignValueSetSrc() {
+        return AssignValueSetSrc;
     }
 
-    public void setDesignator(Designator Designator) {
-        this.Designator=Designator;
+    public void setAssignValueSetSrc(AssignValueSetSrc AssignValueSetSrc) {
+        this.AssignValueSetSrc=AssignValueSetSrc;
     }
 
     public Setop getSetop() {
@@ -36,12 +36,12 @@ public class AssignValueSet extends AssignValue {
         this.Setop=Setop;
     }
 
-    public Designator getDesignator1() {
-        return Designator1;
+    public AssignValueSetSrc getAssignValueSetSrc1() {
+        return AssignValueSetSrc1;
     }
 
-    public void setDesignator1(Designator Designator1) {
-        this.Designator1=Designator1;
+    public void setAssignValueSetSrc1(AssignValueSetSrc AssignValueSetSrc1) {
+        this.AssignValueSetSrc1=AssignValueSetSrc1;
     }
 
     public void accept(Visitor visitor) {
@@ -49,22 +49,22 @@ public class AssignValueSet extends AssignValue {
     }
 
     public void childrenAccept(Visitor visitor) {
-        if(Designator!=null) Designator.accept(visitor);
+        if(AssignValueSetSrc!=null) AssignValueSetSrc.accept(visitor);
         if(Setop!=null) Setop.accept(visitor);
-        if(Designator1!=null) Designator1.accept(visitor);
+        if(AssignValueSetSrc1!=null) AssignValueSetSrc1.accept(visitor);
     }
 
     public void traverseTopDown(Visitor visitor) {
         accept(visitor);
-        if(Designator!=null) Designator.traverseTopDown(visitor);
+        if(AssignValueSetSrc!=null) AssignValueSetSrc.traverseTopDown(visitor);
         if(Setop!=null) Setop.traverseTopDown(visitor);
-        if(Designator1!=null) Designator1.traverseTopDown(visitor);
+        if(AssignValueSetSrc1!=null) AssignValueSetSrc1.traverseTopDown(visitor);
     }
 
     public void traverseBottomUp(Visitor visitor) {
-        if(Designator!=null) Designator.traverseBottomUp(visitor);
+        if(AssignValueSetSrc!=null) AssignValueSetSrc.traverseBottomUp(visitor);
         if(Setop!=null) Setop.traverseBottomUp(visitor);
-        if(Designator1!=null) Designator1.traverseBottomUp(visitor);
+        if(AssignValueSetSrc1!=null) AssignValueSetSrc1.traverseBottomUp(visitor);
         accept(visitor);
     }
 
@@ -73,8 +73,8 @@ public class AssignValueSet extends AssignValue {
         buffer.append(tab);
         buffer.append("AssignValueSet(\n");
 
-        if(Designator!=null)
-            buffer.append(Designator.toString("  "+tab));
+        if(AssignValueSetSrc!=null)
+            buffer.append(AssignValueSetSrc.toString("  "+tab));
         else
             buffer.append(tab+"  null");
         buffer.append("\n");
@@ -85,8 +85,8 @@ public class AssignValueSet extends AssignValue {
             buffer.append(tab+"  null");
         buffer.append("\n");
 
-        if(Designator1!=null)
-            buffer.append(Designator1.toString("  "+tab));
+        if(AssignValueSetSrc1!=null)
+            buffer.append(AssignValueSetSrc1.toString("  "+tab));
         else
             buffer.append(tab+"  null");
         buffer.append("\n");

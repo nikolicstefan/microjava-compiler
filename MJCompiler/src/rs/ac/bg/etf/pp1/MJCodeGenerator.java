@@ -15,33 +15,24 @@ public class MJCodeGenerator extends VisitorAdaptor {
 	private static final Struct setType = Tab.find("set").getType(); // "Tab.setType"
 
 	/* Standard Methods Implementation */
-	
+
 	/* Set Type Implementation */
 
-	/* 
-	 * set a;
-	 * adr = a;				// address on heap
-	 * arr = adr;			// array on heap
-	 * arrElem0 = adr / 4;	// arr element 0 index
-	 * mjArr = adr + 4;		// MJ array
+	/*
+	 * set a; adr = a; // address on heap arr = adr; // array on heap arrElem0 = adr
+	 * / 4; // arr element 0 index mjArr = adr + 4; // MJ array
 	 * 
 	 * ind is indexing mjArr
 	 * 
-	 * heap[arrElem0 + 0]		= arr[0]					 = len = N + 1;
-	 * heap[arrElem0 + 1]		= arr[1]		= mjArr[0]	 = size;
-	 * heap[arrElem0 + 2]		= arr[2]		= mjArr[1]	 = a[0];
-	 * heap[arrElem0 + 3]		= arr[3]		= mjArr[2]	 = a[1];
-	 * ...
-	 * heap[arrElem0 + len + 1]	= arr[len + 1]	= mjArr[len] = a[len - 1];
+	 * heap[arrElem0 + 0] = arr[0] = len = N + 1; heap[arrElem0 + 1] = arr[1] =
+	 * mjArr[0] = size; heap[arrElem0 + 2] = arr[2] = mjArr[1] = a[0]; heap[arrElem0
+	 * + 3] = arr[3] = mjArr[2] = a[1]; ... heap[arrElem0 + len + 1] = arr[len + 1]
+	 * = mjArr[len] = a[len - 1];
 	 */
-	
+
 	/*
-	 * local parameters
-	 * local[0] = set a;
-	 * local[1] = int b; || int b[]; || int width;
-	 * local[2] = int size;
-	 * local[3] = int i;
-	 * local[4] = int j;
+	 * local parameters local[0] = set a; local[1] = int b; || int b[]; || int
+	 * width; local[2] = int size; local[3] = int i; local[4] = int j;
 	 */
 
 	private static void loadLenOnStack(int adrVarInd) {
@@ -54,7 +45,7 @@ public class MJCodeGenerator extends VisitorAdaptor {
 		Code.put(Code.arraylength); // val = set len = N + 1, ind = i + 1 || val = arr len
 	}
 
-	private static void loadSetSizeInVar(int adrVarInd, int sizeVarInd) {
+	private static void loadSetSizeOnStack(int adrVarInd) {
 		if (adrVarInd <= 3) {
 			Code.put(Code.load_n + adrVarInd);
 		} else {
@@ -65,6 +56,10 @@ public class MJCodeGenerator extends VisitorAdaptor {
 		Code.put(Code.aload);
 		Code.loadConst(1);
 		Code.put(Code.add); // val = size + 1, ind = i + 1
+	}
+
+	private static void loadSetSizeInVar(int adrVarInd, int sizeVarInd) {
+		loadSetSizeOnStack(adrVarInd);
 		if (sizeVarInd <= 3) {
 			Code.put(Code.store_n + sizeVarInd);
 		} else {
@@ -73,7 +68,6 @@ public class MJCodeGenerator extends VisitorAdaptor {
 		} // var size = size + 1
 	}
 
-	/*
 	private static void storeSetSizeFromVar(int adrVarInd, int sizeVarInd) {
 		if (adrVarInd <= 3) {
 			Code.put(Code.load_n + adrVarInd);
@@ -92,7 +86,6 @@ public class MJCodeGenerator extends VisitorAdaptor {
 		Code.put(Code.sub); // val = var size - 1, i = ind - 1
 		Code.put(Code.astore); // size = var size - 1 = size + 1 - 1 = size
 	}
-	*/
 
 	private static void incAndStoreSetSizeFromVar(int adrVarInd, int sizeVarInd) {
 		if (adrVarInd <= 3) {
@@ -166,7 +159,6 @@ public class MJCodeGenerator extends VisitorAdaptor {
 		Code.put(Code.astore); // adr[ind] = val
 	}
 
-	/*
 	private static void storeElemFromArr(int adrDstVarInd, int indDstVarInd, int adrSrcVarInd, int indSrcVarInd) {
 		if (adrDstVarInd <= 3) {
 			Code.put(Code.load_n + adrDstVarInd);
@@ -183,7 +175,6 @@ public class MJCodeGenerator extends VisitorAdaptor {
 		loadElemOnStack(adrSrcVarInd, indSrcVarInd); // val = adrSrc[indSrc]
 		Code.put(Code.astore); // adrDst[indDst] = adrSrc[indSrc]
 	}
-	*/
 
 	private static void addNewSetElem() {
 		int setAdrVarInd = 0; // a
@@ -274,11 +265,81 @@ public class MJCodeGenerator extends VisitorAdaptor {
 		Code.fixup(conditionFalsePatchAdr);
 	}
 
+	private static void setUnion() {
+		int adrDstVarInd = 0; // dst
+		int adrSrc1VarInd = 1; // src1
+		int adrSrc2VarInd = 2; // src2
+		int iSetVarInd = 3; // i
+
+		/* i = 0; */
+		incIterator(iSetVarInd); // ind = i + 1
+
+		// union src1 loop
+		int unionSrc1Loop = Code.pc;
+
+		/* condition check: i < dst.length */
+		Code.put(Code.load_3); // i
+		loadLenOnStack(adrDstVarInd); // dst.length
+		Code.putFalseJump(Code.lt, 0); // jump to end of union
+		int condition1FalsePatchAdr = Code.pc - 2;
+		// i < dst.length is true
+
+		/* condition check: i < src1.size */
+		Code.put(Code.load_3); // i
+		loadSetSizeOnStack(adrSrc1VarInd); // src1.size
+		Code.putFalseJump(Code.lt, 0); // jump to end of union src1 loop
+		// ExprStack: i
+		int condition2FalsePatchAdr = Code.pc - 2;
+		// i < src1.size is true
+
+		/* dst[i] = src1[i]; */
+		storeElemFromArr(adrDstVarInd, iSetVarInd, adrSrc1VarInd, iSetVarInd);
+
+		/* i++; */
+		incIterator(iSetVarInd);
+
+		Code.putJump(unionSrc1Loop); // jump to union src1 loop
+
+		// end of union src1 loop
+		Code.fixup(condition2FalsePatchAdr);
+
+		/* dst.size = i; */
+		storeSetSizeFromVar(adrDstVarInd, iSetVarInd);
+
+		/* i = 0; */
+		Code.loadConst(1);
+		Code.put(Code.store_3); // ind = i + 1
+
+		// union src2 loop
+		int unionSrc2Loop = Code.pc;
+
+		/* condition check: i < src2.size */
+		Code.put(Code.load_3); // i
+		loadSetSizeOnStack(adrSrc2VarInd); // src2.size
+		Code.putFalseJump(Code.lt, 0); // jump to end of union
+		int condition3FalsePatchAdr = Code.pc - 2;
+		// i < src2.size is true
+
+		/* add(dst, src2[i]); */
+		Code.put(Code.load_n); // fp1 = dst
+		loadElemOnStack(adrSrc2VarInd, iSetVarInd); // fp2 = src2[i]
+		int offset = Tab.find("add").getAdr() - Code.pc;
+		Code.put(Code.call);
+		Code.put2(offset);
+
+		/* i++; */
+		incIterator(iSetVarInd);
+
+		Code.putJump(unionSrc2Loop); // jump to union src2 loop
+
+		// end of union
+		Code.fixup(condition1FalsePatchAdr);
+		Code.fixup(condition3FalsePatchAdr);
+	}
+
 	static {
 		/*
-		 * char chr(int i) {
-		 *     return i;
-		 * }
+		 * char chr(int i) { return i; }
 		 */
 		Obj methodObj = Tab.find("chr");
 		methodObj.setAdr(Code.pc);
@@ -292,9 +353,7 @@ public class MJCodeGenerator extends VisitorAdaptor {
 		Code.put(Code.return_);
 
 		/*
-		 * int ord(char ch) {
-		 *     return ch;
-		 * }
+		 * int ord(char ch) { return ch; }
 		 */
 		methodObj = Tab.find("ord");
 		methodObj.setAdr(Code.pc);
@@ -308,9 +367,7 @@ public class MJCodeGenerator extends VisitorAdaptor {
 		Code.put(Code.return_);
 
 		/*
-		 * int len(void arr[]) {
-		 *     return arr.length;
-		 * }
+		 * int len(void arr[]) { return arr.length; }
 		 */
 		methodObj = Tab.find("len");
 		methodObj.setAdr(Code.pc);
@@ -325,21 +382,9 @@ public class MJCodeGenerator extends VisitorAdaptor {
 		Code.put(Code.return_);
 
 		/*
-		 * void add(set a, int b)
-		 *     int size, i;
-		 * {
-		 *     size = a.size;
-		 *     for (i = 0; i < size; i++) {
-		 *         if (a[i] == b) {
-		 *             return;
-		 *         }
-		 *     }
-		 *     if (size < a.length) {
-		 *         a[size] = b;
-		 *         size++;
-		 *         a.size = size;
-		 *     }
-		 * }
+		 * void add(set a, int b) int size, i; { size = a.size; for (i = 0; i < size;
+		 * i++) { if (a[i] == b) { return; } } if (size < a.length) { a[size] = b;
+		 * size++; a.size = size; } }
 		 */
 		methodObj = Tab.find("add");
 		methodObj.setAdr(Code.pc);
@@ -353,13 +398,8 @@ public class MJCodeGenerator extends VisitorAdaptor {
 		Code.put(Code.return_);
 
 		/*
-		 * void addAll(set a, int b[])
-		 *     int i;
-		 * {
-		 *     for (i = 0; i < b.length; i++) {
-		 *         add(a, b[i]);
-		 *     }
-		 * }
+		 * void addAll(set a, int b[]) int i; { for (i = 0; i < b.length; i++) { add(a,
+		 * b[i]); } }
 		 */
 		methodObj = Tab.find("addAll");
 		methodObj.setAdr(Code.pc);
@@ -377,13 +417,13 @@ public class MJCodeGenerator extends VisitorAdaptor {
 
 	private int globalVarsCnt;
 	private int mainPc;
-	
+
 	private Obj currClassObj = null;
 	private Obj currAssignDesignatorObj = null;
 	private Obj currFuncCallMethodObj = null;
 	private Obj currFuncCallInstanceObj = null;
 	private Obj currInstanceAllocClassObj = null;
-	
+
 	private List<Integer> vtableInitBeginAdrList = new ArrayList<>();
 	private Stack<List<Integer>> breakPatchAdrListStack = new Stack<>();
 	private Stack<List<Integer>> continuePatchAdrListStack = new Stack<>();
@@ -392,11 +432,11 @@ public class MJCodeGenerator extends VisitorAdaptor {
 	private Stack<Integer> conditionFalsePatchAdrStack = new Stack<>();
 	private Stack<Integer> elseBeginTruePatchAdrStack = new Stack<>();
 	private Stack<Integer> doWhileBeginAdrStack = new Stack<>();
-	
+
 	public MJCodeGenerator(int globalVarsCnt) {
 		this.globalVarsCnt = globalVarsCnt;
 	}
-	
+
 	public int getGlobalVarsCnt() {
 		return globalVarsCnt;
 	}
@@ -404,7 +444,7 @@ public class MJCodeGenerator extends VisitorAdaptor {
 	public int getMainPc() {
 		return mainPc;
 	}
-	
+
 	@Override
 	public void visit(ClassDecl classDecl) {
 		vtableInitBeginAdrList.add(Code.pc);
@@ -412,7 +452,7 @@ public class MJCodeGenerator extends VisitorAdaptor {
 		Code.put(0);
 		Code.put(0);
 		currClassObj.setAdr(globalVarsCnt);
-		for (Obj memberObj: currClassObj.getType().getMembers()) {
+		for (Obj memberObj : currClassObj.getType().getMembers()) {
 			int memberFpPos = memberObj.getFpPos();
 			if (memberObj.getKind() == Obj.Meth && memberFpPos == 1) {
 				String memberName = memberObj.getName();
@@ -436,18 +476,18 @@ public class MJCodeGenerator extends VisitorAdaptor {
 		Code.put(Code.return_);
 		currClassObj = null;
 	}
-	
+
 	@Override
 	public void visit(ClassDeclName classDeclName) {
 		currClassObj = classDeclName.obj;
 	}
-	
+
 	@Override
 	public void visit(ConstructorDecl constructorDecl) {
 		Code.put(Code.exit);
 		Code.put(Code.return_);
 	}
-	
+
 	@Override
 	public void visit(ConstructorDeclName constructorDeclName) {
 		Obj constructorObj = constructorDeclName.obj;
@@ -458,7 +498,7 @@ public class MJCodeGenerator extends VisitorAdaptor {
 		Code.put(fpCount);
 		Code.put(localsCount);
 	}
-	
+
 	@Override
 	public void visit(MethodDecl methodDecl) {
 		Code.put(Code.exit);
@@ -479,7 +519,7 @@ public class MJCodeGenerator extends VisitorAdaptor {
 		Code.put(fpCount);
 		Code.put(localsCount);
 		if (isMainMethod) {
-			for (int vtableInitBeginAdr: vtableInitBeginAdrList) {
+			for (int vtableInitBeginAdr : vtableInitBeginAdrList) {
 				int offset = vtableInitBeginAdr - Code.pc;
 				Code.put(Code.call);
 				Code.put2(offset);
@@ -539,7 +579,7 @@ public class MJCodeGenerator extends VisitorAdaptor {
 		Code.store(designatorObj);
 	}
 
-	private void printBool() {
+	private static void printBool() {
 		// ExprStack: val = 0 || 1, width
 
 		/* condition check: val == true */
@@ -808,14 +848,14 @@ public class MJCodeGenerator extends VisitorAdaptor {
 	public void visit(AssignDesignator assignDesignator) {
 		currAssignDesignatorObj = assignDesignator.getDesignator().obj;
 	}
-	
+
 	@Override
 	public void visit(DesignatorSimple designatorSimple) {
 		if (designatorSimple.obj.getKind() == Obj.Fld) {
 			Code.put(Code.load_n); // this
 		}
 	}
-	
+
 	@Override
 	public void visit(DesignatorArrName designatorArrName) {
 		Obj designatorArrObj = designatorArrName.obj;
@@ -824,286 +864,152 @@ public class MJCodeGenerator extends VisitorAdaptor {
 		}
 		Code.load(designatorArrObj);
 	}
-	
+
 	@Override
 	public void visit(DesignatorBaseInstance designatorBaseInstance) {
 		if (designatorBaseInstance.obj.getKind() == Obj.Fld) {
 			Code.put(Code.load_n); // this
 		}
 	}
-	
+
 	@Override
 	public void visit(SelectorListMember selectorListMember) {
 		Code.load(selectorListMember.obj);
 	}
-		
+
 	@Override
 	public void visit(SelectorListMemberSimple selectorListMemberSimple) {
 		Code.load(selectorListMemberSimple.obj);
 	}
-		
+
 	@Override
 	public void visit(MemberArrName memberArrName) {
 		Code.load(memberArrName.obj);
 	}
-	
+
 	@Override
 	public void visit(InstanceMemberArrName instanceMemberArrName) {
 		Code.load(instanceMemberArrName.obj);
 	}
 
-	private static void setUnion(Obj dstSetObj, Obj src1SetObj, Obj src2SetObj) {
-		// ExprStack:
-
-		/* i = 0; */
-		Code.loadConst(1); // ind = i + 1
-		// ExprStack: i
-
-		// union src1 loop
-		int unionSrc1Loop = Code.pc;
-
-		// ExprStack: i
-
-		/* condition check: i < dst.length */
-		Code.put(Code.dup);
-		// ExprStack: i, i
-		Code.load(dstSetObj);
-		// ExprStack: i, i, adr = dst
-		Code.put(Code.arraylength); // ind = i + 1
-		// ExprStack: i, i, len = dst.length + 1
-		Code.putFalseJump(Code.lt, 0); // jump to end of union
-		// ExprStack: i
-		int condition1FalsePatchAdr = Code.pc - 2;
-		// i < dst.length is true
-
-		// ExprStack: i
-
-		/* condition check: i < src1.size */
-		Code.put(Code.dup);
-		// ExprStack: i, i
-		Code.load(src1SetObj);
-		// ExprStack: i, i, src1
-		Code.loadConst(0);
-		// ExprStack: i, i, adr = src1, ind = 0
-		Code.put(Code.aload);
-		// ExprStack: i, i, size = src1.size
-		Code.loadConst(1);
-		// ExprStack: i, i, size, 1
-		Code.put(Code.add); // ind = i + 1
-		// ExprStack: i, i, size = src1.size + 1
-		Code.putFalseJump(Code.lt, 0); // jump to end of union src1 loop
-		// ExprStack: i
-		int condition2FalsePatchAdr = Code.pc - 2;
-		// i < src1.size is true
-
-		// ExprStack: i
-
-		/* dst[i] = src1[i]; */
-		Code.load(dstSetObj);
-		// ExprStack: i, dst
-		Code.put(Code.dup2);
-		// ExprStack: i, dst, i, dst
-		Code.put(Code.pop);
-		// ExprStack: i, dst, i
-		Code.load(src1SetObj);
-		// ExprStack: i, dst, i, src1
-		Code.put(Code.dup2);
-		// ExprStack: i, dst, i, src1, i, src1
-		Code.put(Code.pop);
-		// ExprStack: i, dst, i, adr = src1, ind = i
-		Code.put(Code.aload);
-		// ExprStack: i, adr = dst, ind = i, val = src1[i]
-		Code.put(Code.astore);
-		// ExprStack: i
-
-		/* i++; */
-		Code.loadConst(1);
-		// ExprStack: i, 1
-		Code.put(Code.add);
-		// ExprStack: i = i + 1
-
-		Code.putJump(unionSrc1Loop); // jump to union src1 loop
-
-		// end of union src1 loop
-		Code.fixup(condition2FalsePatchAdr);
-
-		// ExprStack: i
-
-		/* dst.size = i; */
-		Code.load(dstSetObj);
-		// ExprStack: i, dst
-		Code.put(Code.dup_x1);
-		// ExprStack: dst, i, dst
-		Code.put(Code.pop);
-		// ExprStack: dst, i
-		Code.loadConst(0);
-		// ExprStack: dst, i, 0
-		Code.put(Code.dup_x1);
-		// ExprStack: dst, 0, i, 0
-		Code.put(Code.pop);
-		// ExprStack: dst, 0, i
-		Code.loadConst(1);
-		// ExprStack: dst, 0, i, 1
-		Code.put(Code.sub); // i = ind - 1
-		// ExprStack: adr = dst, ind = 0, val = i = i - 1
-		Code.put(Code.astore);
-		// ExprStack:
-
-		/* i = 0; */
-		Code.loadConst(1); // ind = i + 1
-		// ExprStack: i
-
-		// union src2 loop
-		int unionSrc2Loop = Code.pc;
-
-		// ExprStack: i
-
-		/* condition check: i < src2.size */
-		Code.put(Code.dup);
-		// ExprStack: i, i
-		Code.load(src2SetObj);
-		// ExprStack: i, i, src2
-		Code.loadConst(0);
-		// ExprStack: i, i, adr = src2, ind = 0
-		Code.put(Code.aload);
-		// ExprStack: i, i, size = src2.size
-		Code.loadConst(1);
-		// ExprStack: i, i, size, 1
-		Code.put(Code.add); // ind = i + 1
-		// ExprStack: i, i, size = src2.size + 1
-		Code.putFalseJump(Code.lt, 0); // jump to end of union
-		// ExprStack: i
-		int condition3FalsePatchAdr = Code.pc - 2;
-		// i < src2.size is true
-
-		// ExprStack: i
-
-		/* add(dst, src2[i]); */
-		Code.load(dstSetObj); // fp1 = dst
-		// ExprStack: i, dst
-		Code.put(Code.dup2);
-		// ExprStack: i, dst, i, dst
-		Code.put(Code.pop);
-		// ExprStack: i, dst, i
-		Code.load(src2SetObj);
-		// ExprStack: i, dst, i, src2
-		Code.put(Code.dup_x1);
-		// ExprStack: i, dst, src2, i, src2
-		Code.put(Code.pop);
-		// ExprStack: i, dst, adr = src2, ind = i
-		Code.put(Code.aload); // fp2 = src2[i]
-		// ExprStack: i, fp1 = dst, fp2 = src2[i]
-		int offset = Tab.find("add").getAdr() - Code.pc;
-		Code.put(Code.call);
-		Code.put2(offset);
-		// ExprStack: i
-
-		/* i++; */
-		Code.loadConst(1);
-		// ExprStack: i, 1
-		Code.put(Code.add);
-		// ExprStack: i = i + 1
-
-		Code.putJump(unionSrc2Loop); // jump to union src2 loop
-
-		// end of union
-		Code.fixup(condition1FalsePatchAdr);
-		Code.fixup(condition3FalsePatchAdr);
-
-		// ExprStack: i
-
-		Code.put(Code.pop);
-		// ExprStack:
-
-		// ExprStack:
-	}
-
 	@Override
 	public void visit(AssignValueSet assignValueSet) {
 		Obj dstSetObj = currAssignDesignatorObj;
-		Obj src1SetObj = assignValueSet.getDesignator().obj;
-		Obj src2SetObj = assignValueSet.getDesignator1().obj;
 		String setop = assignValueSet.getSetop().string;
 		if (setop.equals("union")) {
-			setUnion(dstSetObj, src1SetObj, src2SetObj);
+			if (dstSetObj.getKind() == Obj.Fld) {
+				Code.put(Code.dup_x2);
+				Code.put(Code.pop);
+				Code.put(Code.dup_x2);
+				Code.put(Code.pop);
+			}
+			Code.load(dstSetObj);
+			Code.put(Code.dup_x2);
+			Code.put(Code.pop);
+			int offset = 6;
+			Code.put(Code.call);
+			Code.put2(offset);
+			Code.putJump(0);
+			int skipSetUnionPatchAdr = Code.pc - 2;
+			Code.put(Code.enter);
+			Code.put(3); // fpCount
+			Code.put(4); // localsCount
+			setUnion();
+			Code.put(Code.exit);
+			Code.put(Code.return_);
+			Code.fixup(skipSetUnionPatchAdr);
 		}
 	}
 
 	@Override
+	public void visit(AssignValueSetSrc assignValueSetSrc) {
+		Code.load(assignValueSetSrc.getDesignator().obj);
+	}
+
+	@Override
 	public void visit(ExprMap exprMap) {
-		// ExprStack:
+		// ExprStack: arr
 
 		int methodAdr = exprMap.getExprMapMethodName().getDesignator().obj.getAdr();
-		Obj arrObj = exprMap.getExprMapArrName().getDesignator().obj;
 
 		/* sum = 0; */
 		Code.loadConst(0);
-		// ExprStack: sum
+		// ExprStack: arr, sum
+		Code.put(Code.dup_x1);
+		// ExprStack: sum, arr, sum
+		Code.put(Code.pop);
+		// ExprStack: sum, arr
 
 		/* i = 0; */
 		Code.loadConst(0);
-		// ExprStack: sum, i
+		// ExprStack: sum, arr, i
 
 		// map array loop
 		int mapArrLoop = Code.pc;
 
-		// ExprStack: sum, i
+		// ExprStack: sum, arr, i
 
 		/* condition check: i < len */
+		Code.put(Code.dup2);
+		// ExprStack: sum, arr, i, arr, i
 		Code.put(Code.dup_x1);
-		// ExprStack: i, sum, i
-		Code.put(Code.dup);
-		// ExprStack: i, sum, i, i
-		Code.load(arrObj);
-		// ExprStack: i, sum, i, i, adr = arr
+		// ExprStack: sum, arr, i, i, arr, i
+		Code.put(Code.pop);
+		// ExprStack: sum, arr, i, i, adr = arr
 		Code.put(Code.arraylength);
-		// ExprStack: i, sum, i, i, len
+		// ExprStack: sum, arr, i, i, len
 		Code.putFalseJump(Code.lt, 0); // jump to end of map array
-		// ExprStack: i, sum, i
+		// ExprStack: sum, arr, i
 		int conditionFalsePatchAdr = Code.pc - 2;
 		// i < len is true
 
-		// ExprStack: i, sum, i
+		// ExprStack: sum, arr, i
 
 		/* sum += methodAdr(arr[i]); */
-		Code.load(arrObj);
-		// ExprStack: i, sum, i, arr
+		Code.put(Code.dup_x2);
+		// ExprStack: i, sum, arr, i
 		Code.put(Code.dup_x1);
-		// ExprStack: i, sum, arr, i, arr
+		// ExprStack: i, sum, i, arr, i
 		Code.put(Code.pop);
-		// ExprStack: i, sum, adr = arr, ind = i
+		// ExprStack: i, sum, i, arr
+		Code.put(Code.dup_x2);
+		// ExprStack: i, arr, sum, i, arr
+		Code.put(Code.dup_x1);
+		// ExprStack: i, arr, sum, arr, i, arr
+		Code.put(Code.pop);
+		// ExprStack: i, arr, sum, adr = arr, ind = i
 		Code.put(Code.aload);
-		// ExprStack: i, sum, arr[i]
+		// ExprStack: i, arr, sum, arr[i]
 		int offset = methodAdr - Code.pc;
 		Code.put(Code.call);
 		Code.put2(offset);
-		// ExprStack: i, sum, ret
+		// ExprStack: i, arr, sum, ret
 		Code.put(Code.add);
-		// ExprStack: i, sum = sum + ret
+		// ExprStack: i, arr, sum = sum + ret
 
 		/* i++; */
-		Code.put(Code.dup_x1);
-		// ExprStack: sum, i, sum
+		Code.put(Code.dup_x2);
+		// ExprStack: sum, i, arr, sum
 		Code.put(Code.pop);
-		// ExprStack: sum, i
+		// ExprStack: sum, i arr
+		Code.put(Code.dup_x1);
+		// ExprStack: sum, arr, i, arr
+		Code.put(Code.pop);
+		// ExprStack: sum, arr, i
 		Code.loadConst(1);
-		// ExprStack: sum, i, 1
+		// ExprStack: sum, arr, i, 1
 		Code.put(Code.add);
-		// ExprStack: sum, i = i + 1
+		// ExprStack: sum, arr, i = i + 1
 
 		Code.putJump(mapArrLoop); // jump to map array loop
 
 		// end of map array
 		Code.fixup(conditionFalsePatchAdr);
 
-		// ExprStack: i, sum, i
+		// ExprStack: sum, arr, i
 
 		Code.put(Code.pop);
-		// ExprStack: i, sum
-		Code.put(Code.dup_x1);
-		// ExprStack: sum, i, sum
-		Code.put(Code.pop);
-		// ExprStack: sum, i
+		// ExprStack: sum, arr
 		Code.put(Code.pop);
 		// ExprStack: sum
 
@@ -1196,7 +1102,7 @@ public class MJCodeGenerator extends VisitorAdaptor {
 			Code.put(1);
 		}
 	}
-	
+
 	@Override
 	public void visit(FactorInstanceAlloc factorInstanceAlloc) {
 		Code.loadConst(currInstanceAllocClassObj.getAdr());
@@ -1206,7 +1112,7 @@ public class MJCodeGenerator extends VisitorAdaptor {
 		currFuncCallMethodObj = null;
 		currFuncCallInstanceObj = null;
 	}
-	
+
 	@Override
 	public void visit(FuncCallMethod funcCallMethod) {
 		currFuncCallMethodObj = funcCallMethod.obj;
@@ -1218,12 +1124,12 @@ public class MJCodeGenerator extends VisitorAdaptor {
 			Code.put(Code.dup);
 		}
 	}
-	
+
 	@Override
 	public void visit(FuncCallInstance funcCallInstance) {
 		currFuncCallInstanceObj = funcCallInstance.obj;
 	}
-	
+
 	@Override
 	public void visit(ActPar actPar) {
 		int currFuncCallMethodFpPos = currFuncCallMethodObj.getFpPos();
@@ -1232,7 +1138,7 @@ public class MJCodeGenerator extends VisitorAdaptor {
 			Code.put(Code.pop);
 		}
 	}
-	
+
 	@Override
 	public void visit(ConstructorCall constructorCall) {
 		Obj constructorObj = constructorCall.obj;
@@ -1242,7 +1148,7 @@ public class MJCodeGenerator extends VisitorAdaptor {
 			Code.put2(offset);
 		}
 	}
-	
+
 	@Override
 	public void visit(ConstructorCallType constructorCallType) {
 		currInstanceAllocClassObj = constructorCallType.obj;
@@ -1251,6 +1157,11 @@ public class MJCodeGenerator extends VisitorAdaptor {
 		Code.put(Code.new_);
 		Code.put2(numberOfBytes);
 		Code.put(Code.dup);
+	}
+	
+	@Override
+	public void visit(ExprMapArrName exprMapArrName) {
+		Code.load(exprMapArrName.getDesignator().obj);
 	}
 
 	// Condition [BEGIN]

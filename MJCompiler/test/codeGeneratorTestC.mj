@@ -1,11 +1,40 @@
-program codeGeneratorTestB
-	class Union
+program codeGeneratorTestC
+	class Operation
 	{
 		set a;
 		set b;
 		set c;
 		
-		{		
+		{
+			void printName()
+			{
+				print('O'); print('p'); print('e');
+				print('r'); print('a'); print('t');
+				print('i'); print('o'); print('n');
+				print(eol);
+			}
+		}
+	}
+	
+	class SetOperation extends Operation
+	{
+		{
+			void printName()
+			{
+				print('S'); print('e'); print('t');
+				print('O'); print('p'); print('e');
+				print('r'); print('a'); print('t');
+				print('i'); print('o'); print('n');
+				print(eol);
+			}
+		}
+	}
+	
+	class Union extends SetOperation
+	{
+		int arr[];
+		
+		{
 			void add(int a[], int b[])
 			{
 				addAll(this.a, a);
@@ -19,26 +48,82 @@ program codeGeneratorTestB
 				print(b); print(eol);
 				print(c); print(eol);
 			}
+			
+			void printName()
+			{
+				print('U'); print('n'); print('i');
+				print('o'); print('n');
+				print(eol);
+			}
 		}
 	}
 	
 	int a[], b[], i;
-	Union u;
 {
+	int echo(int x) {
+		return x;
+	}
+	
 	void main()
+		Operation o;
+		SetOperation so;
+		Union u;
 	{
+		o = new Operation();
+		o.printName(); // Operation
+		
+		o = new SetOperation();
+		o.printName(); // SetOperation
+		
+		o = new Union();
+		o.printName(); // Union
+		
+		so = new SetOperation();
+		so.printName(); // SetOperation
+		
+		so = new Union();
+		so.printName(); // Union
+		
+		u = new Union();
+		u.printName(); // Union
+				
 		a = new int[5];
 		b = new int[5];
 		
 		i = 0;
 		do {
-			a[i] = i;
-			b[i] = i + 2;
+			a[i] = (10 * i) % 7;
+			b[i] = i % 4;
 			i++;
 		} while (i < 5);
 		
 		u = new Union();
+		u.a = new set[5];
+		u.b = new set[5];
+		u.c = new set[10];
 		u.add(a, b);
 		u.printSets();
+		// 0 3 6 2 5
+		// 0 1 2 3
+		// 0 3 6 2 5 1
+		
+		u.arr = new int[5];
+		i = 0;
+		do {
+			u.arr[i] = i + 1;
+		} while (i < 4, i++);
+		print(echo map u.arr); // 15
 	}
 }
+
+// output
+// Operation
+// SetOperation
+// Union
+// SetOperation
+// Union
+// Union
+// 0 3 6 2 5
+// 0 1 2 3
+// 0 3 6 2 5 1
+// 15
