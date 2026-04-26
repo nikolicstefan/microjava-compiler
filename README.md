@@ -1,6 +1,6 @@
 # MicroJava Compiler
 
-A compiler for the **MicroJava** programming language, implemented in Java as part of the *Compiler Construction 1* course at the University of Belgrade, School of Electrical Engineering.
+A compiler for the **MicroJava** programming language, implemented in Java as part of the *Compiler Construction 1* course at the School of Electrical Engineering, University of Belgrade, 2024/2025.
 
 ---
 
